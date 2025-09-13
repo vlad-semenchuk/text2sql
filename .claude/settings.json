@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Write(src/**)",
+      "Write(tests/**)",
+      "Write(docs/**)",
+      "Bash(npm:*)",
+      "Bash(yarn:*)",
+      "Bash(git:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Write(.env)",
+      "Write(package.json)"
+    ]
+  },
+  "model": "claude-sonnet-4-20250514",
+  "includeCoAuthoredBy": true
+}
