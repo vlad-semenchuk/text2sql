@@ -9,9 +9,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
 
-export type BeforeStartHook<T = INestApplicationContext> = (
-  app: T,
-) => unknown | Promise<unknown>;
+export type BeforeStartHook<T = INestApplicationContext> = (app: T) => unknown | Promise<unknown>;
 
 export class AppBuilder<T extends INestApplication = INestApplication> {
   private beforeStartHooks: BeforeStartHook<T>[] = [];
@@ -64,17 +62,12 @@ export class AppBuilder<T extends INestApplication = INestApplication> {
     });
   }
 
-  enableStaticAssets(options: {
-    path: string;
-    staticPath: string;
-  }): AppBuilder<T> {
+  enableStaticAssets(options: { path: string; staticPath: string }): AppBuilder<T> {
     return this.beforeStart((app) => {
       const expressApp = app as unknown as NestExpressApplication;
       const resolvedPath = path.resolve(options.staticPath);
 
-      Logger.log(
-        `Serving static files from ${resolvedPath} at ${options.path}`,
-      );
+      Logger.log(`Serving static files from ${resolvedPath} at ${options.path}`);
       expressApp.useStaticAssets(resolvedPath, {
         prefix: options.path,
       });

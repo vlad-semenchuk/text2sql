@@ -1,5 +1,5 @@
 import { Body, Controller, Inject, Post } from '@nestjs/common';
-import { Text2SqlService } from '../text2sql.service';
+import { Text2SqlService } from '../services/text2sql.service';
 
 @Controller('text2sql')
 export class Text2SqlController {

@@ -1,12 +1,12 @@
-import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { AppBuilder } from '@modules/config';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe());
-  app.setGlobalPrefix('api/v2');
-  await app.listen(4000);
-  console.log('Application running on port 4000');
+function bootstrap() {
+  AppBuilder.create(AppModule)
+    .enableValidation()
+    .beforeStart((app) => {
+      app.setGlobalPrefix('api/v2');
+    })
+    .launch();
 }
 bootstrap();
