@@ -1,25 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Text2SqlModule } from './modules/text2sql';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env.alternative',
-    }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'alternative-host',
-      port: 5433,
-      username: 'alt_user',
-      password: 'alt_pass',
-      database: 'alternative_db',
-      autoLoadEntities: true,
-      synchronize: true,
-    }),
-  ],
-  controllers: [],
-  providers: [],
+  imports: [Text2SqlModule.forRootFromEnv()],
 })
 export class AppModule {}

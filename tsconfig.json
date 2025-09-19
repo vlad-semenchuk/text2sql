@@ -15,16 +15,13 @@
     "outDir": "./build",
     "baseUrl": "./",
     "paths": {
-      "@libs/config": [
-        "src/libs/shared/config/src/index"
+      "@modules/config": [
+        "src/modules/shared/config/index"
       ],
-      "@libs/core": [
-        "src/libs/shared/core/src/index"
+      "@modules/datasource": [
+        "src/modules/shared/datasource/index"
       ],
-      "@libs/data-access-postgres": [
-        "src/libs/shared/data-access-postgres/src/index"
-      ],
-      "@libs/text2sql": [
+      "@modules/text2sql": [
         "src/libs/text2sql/src/index"
       ]
     },
