@@ -1,7 +1,7 @@
 {
-  "name": "text2sql-alternative",
+  "name": "text2sql",
   "version": "1.0.0",
-  "description": "Alternative implementation of text2sql conversion",
+  "description": "Text2SQL conversion service",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -15,6 +15,8 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "dependencies": {
+    "@langchain/anthropic": "^0.3.28",
+    "@langchain/langgraph": "^0.4.9",
     "@langchain/openai": "^0.6.13",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -23,11 +25,11 @@
     "@nestjs/typeorm": "^11.0.0",
     "@types/joi": "^17.2.2",
     "@types/pg": "^8.15.5",
-    "express": "^4.18.0",
     "axios": "^1.6.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "dotenv": "^17.2.2",
+    "express": "^4.18.0",
     "joi": "^18.0.1",
     "langchain": "^0.3.34",
     "pg": "^8.16.3",

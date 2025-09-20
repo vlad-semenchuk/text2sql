@@ -21,6 +21,9 @@
       "@modules/datasource": [
         "src/modules/shared/datasource/index"
       ],
+      "@modules/llm": [
+        "src/modules/shared/llm/index"
+      ],
       "@modules/text2sql": [
         "src/libs/text2sql/src/index"
       ]

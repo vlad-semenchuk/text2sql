@@ -5,6 +5,7 @@ import { DatasourceConfig } from './datasource.config';
 import { SQL_DATASOURCE } from './constants';
 import { DataSource } from 'typeorm';
 import { SqlDatabase } from 'langchain/sql_db';
+import { Env } from '@modules/config';
 
 @Module({})
 export class DatasourceModule {
@@ -27,5 +28,12 @@ export class DatasourceModule {
       ],
       exports: [SQL_DATASOURCE],
     };
+  }
+
+  static forRootFromEnv(): DynamicModule {
+    return DatasourceModule.forRoot({
+      type: Env.string('DATASOURCE_TYPE'),
+      url: Env.string('DATASOURCE_URL'),
+    });
   }
 }
