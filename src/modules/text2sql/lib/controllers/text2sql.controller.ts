@@ -6,7 +6,7 @@ export class Text2SqlController {
   @Inject() private readonly text2sql: Text2SqlService;
 
   @Post('query')
-  async generatePlan(@Body('query') query: string) {
-    return await this.text2sql.query(query);
+  async generatePlan(@Body('question') question: string) {
+    return await this.text2sql.query(question);
   }
 }

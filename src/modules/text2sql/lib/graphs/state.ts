@@ -10,3 +10,6 @@ export const StateAnnotation = Annotation.Root({
   result: Annotation<string>,
   answer: Annotation<string>,
 });
+
+export type InputState = typeof InputStateAnnotation.State;
+export type State = typeof StateAnnotation.State;

@@ -8,6 +8,7 @@ export class LLMModule {
   static forRoot(options: LLMModuleOptions): DynamicModule {
     return {
       module: LLMModule,
+      global: true,
       providers: [{ provide: LLM, useValue: makeLLM(options) }],
       exports: [LLM],
     };
@@ -30,5 +31,11 @@ export class LLMModule {
         baseURL: Env.string('OPENROUTER_BASE_URL'),
       },
     });
+  }
+
+  static forFeature(): DynamicModule {
+    return {
+      module: LLMModule,
+    };
   }
 }

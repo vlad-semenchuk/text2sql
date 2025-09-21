@@ -12,6 +12,7 @@ export class DatasourceModule {
   static forRoot(options: DataSourceModuleOptions): DynamicModule {
     return {
       module: DatasourceModule,
+      global: true,
       imports: [TypeOrmModule.forRootAsync(DatasourceConfig(options).asProvider())],
       providers: [
         {
@@ -35,5 +36,11 @@ export class DatasourceModule {
       type: Env.string('DATASOURCE_TYPE'),
       url: Env.string('DATASOURCE_URL'),
     });
+  }
+
+  static forFeature(): DynamicModule {
+    return {
+      module: DatasourceModule,
+    };
   }
 }
