@@ -16,12 +16,16 @@ const queryOutput = z.object({
 @Injectable()
 export class WriteQueryNode extends BaseNode implements OnModuleInit {
   private queryPromptTemplate: ChatPromptTemplate;
+  private tableInfo: string;
 
   @Inject(SQL_DATASOURCE) private readonly db: SqlDatabase;
   @Inject(LLM) private readonly llm: BaseChatModel;
 
   async onModuleInit(): Promise<void> {
     this.queryPromptTemplate = await pull<ChatPromptTemplate>('langchain-ai/sql-query-system-prompt');
+
+    // TODO: vector store
+    this.tableInfo = await this.db.getTableInfo();
   }
 
   async execute(state: typeof InputStateAnnotation.State): Promise<Partial<typeof StateAnnotation.State>> {
@@ -29,7 +33,7 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
     const promptValue = await this.queryPromptTemplate.invoke({
       dialect: this.db.appDataSourceOptions.type,
       top_k: 10,
-      table_info: await this.db.getTableInfo(),
+      table_info: this.tableInfo,
       input: state.question,
     });
     const result = await structuredLlm.invoke(promptValue);

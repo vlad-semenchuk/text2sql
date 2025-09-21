@@ -8,7 +8,7 @@ import { Text2SqlGraph } from './workflows/text2sql.graph';
 
 @Module({
   imports: [DatasourceModule.forFeature(), LLMModule.forFeature()],
-  providers: [WriteQueryNode, ExecuteQueryNode, GenerateAnswerNode, Text2SqlGraph, Text2SqlGraph],
+  providers: [WriteQueryNode, ExecuteQueryNode, GenerateAnswerNode, Text2SqlGraph],
   exports: [Text2SqlGraph],
 })
 export class GraphsModule {}
