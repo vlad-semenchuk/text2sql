@@ -23,6 +23,16 @@ export class Text2SqlGraph implements OnModuleInit {
     return result.answer as string;
   }
 
+  async *executeStream(question: string): AsyncIterable<string> {
+    const stream = await this.graph.stream({ question }, { streamMode: 'custom' as const });
+
+    for await (const chunk of stream) {
+      if (typeof chunk === 'string') {
+        yield chunk;
+      }
+    }
+  }
+
   private createGraph() {
     return new StateGraph({
       stateSchema: StateAnnotation,
