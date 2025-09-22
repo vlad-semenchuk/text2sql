@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { BaseNode } from './base.node';
 import { State } from '../state';
 import { LLM } from '@modules/llm';
@@ -7,9 +7,13 @@ import { LangGraphRunnableConfig } from '@langchain/langgraph';
 
 @Injectable()
 export class GenerateAnswerNode extends BaseNode {
+  private readonly logger = new Logger(GenerateAnswerNode.name);
+
   @Inject(LLM) private readonly llm: BaseChatModel;
 
   async execute(state: State, config?: LangGraphRunnableConfig): Promise<Partial<State>> {
+    this.logger.debug(`Generating answer`, state);
+
     const promptValue =
       'Given the following user question, corresponding SQL query, ' +
       'and SQL result, answer the user question.\n\n' +

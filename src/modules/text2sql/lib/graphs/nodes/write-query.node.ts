@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { SQL_DATASOURCE } from '@modules/datasource';
 import { SqlDatabase } from 'langchain/sql_db';
 import { LLM } from '@modules/llm';
@@ -15,6 +15,7 @@ const queryOutput = z.object({
 
 @Injectable()
 export class WriteQueryNode extends BaseNode implements OnModuleInit {
+  private readonly logger = new Logger(WriteQueryNode.name);
   private queryPromptTemplate: ChatPromptTemplate;
   private tableInfo: string;
 
@@ -29,6 +30,7 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
   }
 
   async execute(state: typeof InputStateAnnotation.State): Promise<Partial<typeof StateAnnotation.State>> {
+    this.logger.debug(`Writing sql query for question: ${state.question}`);
     const structuredLlm = this.llm.withStructuredOutput(queryOutput);
     const promptValue = await this.queryPromptTemplate.invoke({
       dialect: this.db.appDataSourceOptions.type,
