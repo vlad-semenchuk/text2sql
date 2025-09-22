@@ -2,10 +2,11 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { DataSourceModuleOptions } from './types';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatasourceConfig } from './datasource.config';
-import { SQL_DATASOURCE } from './constants';
+import { SQL_DATABASE } from './constants';
 import { DataSource } from 'typeorm';
-import { SqlDatabase } from 'langchain/sql_db';
 import { Env } from '@modules/config';
+import { Database } from './database';
+import { DatasourceService } from './datasource.service';
 
 @Module({})
 export class DatasourceModule {
@@ -15,26 +16,27 @@ export class DatasourceModule {
       global: true,
       imports: [TypeOrmModule.forRootAsync(DatasourceConfig(options).asProvider())],
       providers: [
+        DatasourceService,
         {
-          provide: SQL_DATASOURCE,
-          inject: [DataSource],
-          useFactory: async (ds: DataSource) => {
+          provide: SQL_DATABASE,
+          inject: [DataSource, DatasourceService],
+          useFactory: async (ds: DataSource, dsService: DatasourceService) => {
             if (!ds.isInitialized) {
               await ds.initialize();
             }
 
-            return SqlDatabase.fromDataSourceParams({ appDataSource: ds });
+            return new Database({ appDataSource: ds }, dsService);
           },
         },
       ],
-      exports: [SQL_DATASOURCE],
+      exports: [SQL_DATABASE],
     };
   }
 
   static forRootFromEnv(): DynamicModule {
     return DatasourceModule.forRoot({
-      type: Env.string('DATASOURCE_TYPE'),
-      url: Env.string('DATASOURCE_URL'),
+      url: Env.string('POSTGRES_URL'),
+      schema: Env.optionalString('POSTGRES_SCHEMA', 'public'),
     });
   }
 

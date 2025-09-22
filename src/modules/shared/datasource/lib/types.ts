@@ -1,4 +1,4 @@
 export type DataSourceModuleOptions = {
-  type: string;
   url: string;
+  schema: string;
 };

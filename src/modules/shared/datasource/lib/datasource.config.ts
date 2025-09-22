@@ -6,8 +6,9 @@ import { DataSourceModuleOptions } from '@modules/datasource';
 export const DatasourceConfig = (options: DataSourceModuleOptions) =>
   registerAs('datasource', (): TypeOrmModuleOptions & DataSourceOptions => {
     return {
-      type: options.type,
+      type: 'postgres',
       url: options.url,
+      schema: options.schema,
       ssl: false,
       synchronize: false,
       autoLoadEntities: false,

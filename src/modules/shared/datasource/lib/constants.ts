@@ -1,1 +1,1 @@
-export const SQL_DATASOURCE = Symbol('SQL_DATASOURCE');
+export const SQL_DATABASE = Symbol('SQL_DATABASE');
