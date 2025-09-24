@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { BaseNode } from './base.node';
-import { InputState, State } from '../state';
+import { InputState, InputType, State } from '../state';
 import { LLM } from '@modules/llm';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { z } from 'zod';
@@ -8,7 +8,9 @@ import { SQL_DATABASE } from '@modules/datasource';
 import { SqlDatabase } from 'langchain/sql_db';
 
 const validationOutput = z.object({
-  isValidQuestion: z.boolean().describe('Whether the input is a database-related question'),
+  questionType: z
+    .enum([InputType.VALID_QUERY, InputType.DISCOVERY_REQUEST, InputType.INVALID_INPUT])
+    .describe('Type of question: database query, discovery request, or invalid input'),
   rejectionReason: z.string().describe('Reason for rejection if not valid'),
 });
 
@@ -29,28 +31,40 @@ export class ValidateInputNode extends BaseNode implements OnModuleInit {
 
     const structuredLlm = this.llm.withStructuredOutput(validationOutput);
 
-    const prompt = `You are a database question classifier. Your job is to determine if the user's input is a genuine question that requires querying a database to answer.
+    const prompt = `You are a database question classifier. Your job is to classify user inputs into three categories:
+
+1. ${InputType.VALID_QUERY}: Questions requiring database queries
+2. ${InputType.DISCOVERY_REQUEST}: Questions about database capabilities, schema, or sample questions
+3. ${InputType.INVALID_INPUT}: Non-database related inputs
 
 Database Schema Information:
 ${this.tableInfo}
 
-Valid database questions are those that:
-- Ask for specific data or information that would be stored in the available database tables
-- Request analysis, filtering, or aggregation of data from the existing tables
-- Ask about records, counts, comparisons, or relationships in the available data
-- Reference entities, fields, or concepts that exist in the database schema
+${InputType.VALID_QUERY} examples:
+- "How many users are there?"
+- "Show me the top 10 products by sales"
+- "What is the average order value?"
+- Questions asking for specific data from available tables
 
-Invalid inputs include:
-- Greetings (hi, hello, good morning, etc.)
+${InputType.DISCOVERY_REQUEST} examples:
+- "What can you help me with?"
+- "What's in this database?"
+- "Show me what data is available"
+- "What kind of questions can I ask?"
+- "Give me some example questions"
+- "What are the capabilities?"
+- "What tables do you have?"
+
+${InputType.INVALID_INPUT} examples:
+- Greetings (hi, hello, good morning)
 - General conversation or chitchat
-- Questions about the system itself or how it works
-- Questions about data that doesn't exist in the available database tables
-- Non-database related questions (weather, sports, general knowledge)
+- Questions about weather, sports, general knowledge
 - Empty or unclear inputs
+- Non-database related questions
 
 User input: "${state.question}"
 
-Based on the database schema above, classify this input and provide a brief reason if it's not valid.`;
+Classify this input and provide a brief reason if it's not a valid query.`;
 
     const result = await structuredLlm.invoke(prompt);
 
@@ -58,7 +72,7 @@ Based on the database schema above, classify this input and provide a brief reas
 
     return {
       ...state,
-      isValidQuestion: result.isValidQuestion,
+      questionType: result.questionType,
       rejectionReason: result.rejectionReason || '',
     };
   }

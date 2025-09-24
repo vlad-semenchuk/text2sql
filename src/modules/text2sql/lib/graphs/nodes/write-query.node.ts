@@ -29,6 +29,48 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
     this.tableInfo = await this.db.getTableInfo();
   }
 
+  async validateQuery(sqlQuery: string): Promise<{ isValid: boolean; errorMessage?: string }> {
+    try {
+      await this.db.run(`EXPLAIN ${sqlQuery}`);
+      return { isValid: true };
+    } catch (error) {
+      this.logger.error(`Query validation failed: ${error.message}`);
+      return { isValid: false, errorMessage: error.message };
+    }
+  }
+
+  async fixQuery(invalidQuery: string, errorMessage: string): Promise<string> {
+    this.logger.debug(`Attempting to fix invalid query: ${invalidQuery}`);
+
+    const structuredLlm = this.llm.withStructuredOutput(queryOutput);
+
+    const fixPrompt = `You are an expert SQL query fixer. Your task is to fix a syntactically invalid SQL query based on the database error message.
+
+Database Schema Information:
+${this.tableInfo}
+
+Database Dialect: ${this.db.appDataSourceOptions.type}
+
+Invalid Query:
+${invalidQuery}
+
+Database Error:
+${errorMessage}
+
+Please fix the SQL query to make it syntactically valid and executable. Focus on:
+- Correcting syntax errors
+- Fixing column/table name issues
+- Ensuring proper SQL dialect compatibility
+- Maintaining the original query intent
+
+Return only the corrected SQL query.`;
+
+    const result = await structuredLlm.invoke(fixPrompt);
+    this.logger.debug(`Fixed query: ${result.query}`);
+
+    return result.query;
+  }
+
   async execute(state: typeof InputStateAnnotation.State): Promise<Partial<typeof StateAnnotation.State>> {
     this.logger.debug(`Writing sql query for question: ${state.question}`);
     const structuredLlm = this.llm.withStructuredOutput(queryOutput);
@@ -39,6 +81,25 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
       input: state.question,
     });
     const result = await structuredLlm.invoke(promptValue);
+
+    const validation = await this.validateQuery(result.query as string);
+
+    if (!validation.isValid) {
+      this.logger.warn(`Generated query failed validation: ${result.query}. Error: ${validation.errorMessage}`);
+
+      const fixedQuery = await this.fixQuery(result.query as string, validation.errorMessage!);
+
+      const fixedValidation = await this.validateQuery(fixedQuery);
+
+      if (!fixedValidation.isValid) {
+        throw new Error(
+          `Failed to generate valid SQL query. Original error: ${validation.errorMessage}. Fixed query also failed: ${fixedValidation.errorMessage}`,
+        );
+      }
+
+      this.logger.debug(`Successfully fixed invalid query. Using fixed query: ${fixedQuery}`);
+      return { ...state, query: fixedQuery };
+    }
 
     return { ...state, query: result.query };
   }
