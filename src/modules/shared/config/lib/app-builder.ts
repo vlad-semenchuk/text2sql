@@ -9,7 +9,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
 
-export type BeforeStartHook<T = INestApplicationContext> = (app: T) => unknown | Promise<unknown>;
+export type BeforeStartHook<T = INestApplicationContext> = (app: T) => unknown;
 
 export class AppBuilder<T extends INestApplication = INestApplication> {
   private beforeStartHooks: BeforeStartHook<T>[] = [];
@@ -27,25 +27,6 @@ export class AppBuilder<T extends INestApplication = INestApplication> {
 
   public launch() {
     this.start();
-  }
-
-  private async start(): Promise<T> {
-    const app = await NestFactory.create(this.module as any);
-    await this.runBeforeAppStartHooks(app);
-
-    const port = process.env['PORT'] ?? 3000;
-
-    await app.listen(port, '0.0.0.0');
-
-    Logger.log(`App started listening on ${await app.getUrl()}`);
-
-    return app as T;
-  }
-
-  private async runBeforeAppStartHooks(app: INestApplication) {
-    for (const hook of this.beforeStartHooks) {
-      await hook(app as T);
-    }
   }
 
   enableValidation(options: ValidationPipeOptions = {}): AppBuilder<T> {
@@ -72,5 +53,24 @@ export class AppBuilder<T extends INestApplication = INestApplication> {
         prefix: options.path,
       });
     });
+  }
+
+  private async start(): Promise<T> {
+    const app = await NestFactory.create(this.module as any);
+    await this.runBeforeAppStartHooks(app);
+
+    const port = process.env['PORT'] ?? 3000;
+
+    await app.listen(port, '0.0.0.0');
+
+    Logger.log(`App started listening on ${await app.getUrl()}`);
+
+    return app as T;
+  }
+
+  private async runBeforeAppStartHooks(app: INestApplication) {
+    for (const hook of this.beforeStartHooks) {
+      await hook(app as T);
+    }
   }
 }

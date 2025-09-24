@@ -8,8 +8,4 @@ export class Text2SqlService {
   async query(question: string) {
     return this.text2SqlGraph.execute(question);
   }
-
-  async *queryStream(question: string): AsyncIterable<string> {
-    yield* this.text2SqlGraph.executeStream(question);
-  }
 }

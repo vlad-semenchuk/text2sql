@@ -6,6 +6,8 @@ export const InputStateAnnotation = Annotation.Root({
 
 export const StateAnnotation = Annotation.Root({
   question: Annotation<string>,
+  isValidQuestion: Annotation<boolean>,
+  rejectionReason: Annotation<string>,
   query: Annotation<string>,
   result: Annotation<string>,
   answer: Annotation<string>,

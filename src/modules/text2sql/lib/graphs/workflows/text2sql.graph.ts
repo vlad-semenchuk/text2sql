@@ -3,10 +3,12 @@ import { CompiledStateGraph, END, START, StateGraph } from '@langchain/langgraph
 import { WriteQueryNode } from '../nodes/write-query.node';
 import { ExecuteQueryNode } from '../nodes/execute-query.node';
 import { GenerateAnswerNode } from '../nodes/generate-answer.node';
+import { ValidateInputNode } from '../nodes/validate-input.node';
 import { State, StateAnnotation } from '../state';
 
 @Injectable()
 export class Text2SqlGraph implements OnModuleInit {
+  @Inject() private readonly validateInputNode: ValidateInputNode;
   @Inject() private readonly writeQueryNode: WriteQueryNode;
   @Inject() private readonly executeQueryNode: ExecuteQueryNode;
   @Inject() private readonly generateAnswerNode: GenerateAnswerNode;
@@ -23,26 +25,20 @@ export class Text2SqlGraph implements OnModuleInit {
     return result.answer as string;
   }
 
-  async *executeStream(question: string): AsyncIterable<string> {
-    const stream = await this.graph.stream({ question }, { streamMode: 'custom' as const });
-
-    for await (const chunk of stream) {
-      if (typeof chunk === 'string') {
-        yield chunk;
-      }
-    }
-  }
-
   private createGraph() {
     return new StateGraph({
       stateSchema: StateAnnotation,
     })
-      .addNode('writeQuery', this.writeQueryNode.execute.bind(this.writeQueryNode))
-      .addNode('executeQuery', this.executeQueryNode.execute.bind(this.executeQueryNode))
-      .addNode('generateAnswer', this.generateAnswerNode.execute.bind(this.generateAnswerNode))
-      .addEdge(START, 'writeQuery')
-      .addEdge('writeQuery', 'executeQuery')
-      .addEdge('executeQuery', 'generateAnswer')
-      .addEdge('generateAnswer', END);
+      .addNode(ValidateInputNode.name, this.validateInputNode.execute.bind(this.validateInputNode))
+      .addNode(WriteQueryNode.name, this.writeQueryNode.execute.bind(this.writeQueryNode))
+      .addNode(ExecuteQueryNode.name, this.executeQueryNode.execute.bind(this.executeQueryNode))
+      .addNode(GenerateAnswerNode.name, this.generateAnswerNode.execute.bind(this.generateAnswerNode))
+      .addEdge(START, ValidateInputNode.name)
+      .addConditionalEdges(ValidateInputNode.name, (state: State) => {
+        return state.isValidQuestion ? WriteQueryNode.name : GenerateAnswerNode.name;
+      })
+      .addEdge(WriteQueryNode.name, ExecuteQueryNode.name)
+      .addEdge(ExecuteQueryNode.name, GenerateAnswerNode.name)
+      .addEdge(GenerateAnswerNode.name, END);
   }
 }
