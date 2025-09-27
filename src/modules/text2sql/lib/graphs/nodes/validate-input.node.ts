@@ -9,8 +9,8 @@ import { SqlDatabase } from 'langchain/sql_db';
 
 const validationOutput = z.object({
   questionType: z
-    .enum([InputType.VALID_QUERY, InputType.DISCOVERY_REQUEST, InputType.INVALID_INPUT])
-    .describe('Type of question: database query, discovery request, or invalid input'),
+    .enum([InputType.VALID_QUERY, InputType.DISCOVERY_REQUEST])
+    .describe('Type of question: database query or discovery request'),
   rejectionReason: z.string().describe('Reason for rejection if not valid'),
 });
 
@@ -31,11 +31,10 @@ export class ValidateInputNode extends BaseNode implements OnModuleInit {
 
     const structuredLlm = this.llm.withStructuredOutput(validationOutput);
 
-    const prompt = `You are a database question classifier. Your job is to classify user inputs into three categories:
+    const prompt = `You are a database question classifier. Your job is to classify user inputs into two categories:
 
 1. ${InputType.VALID_QUERY}: Questions requiring database queries
-2. ${InputType.DISCOVERY_REQUEST}: Questions about database capabilities, schema, or sample questions
-3. ${InputType.INVALID_INPUT}: Non-database related inputs
+2. ${InputType.DISCOVERY_REQUEST}: Everything else (greetings, help requests, off-topic questions, or unclear inputs)
 
 Database Schema Information:
 ${this.tableInfo}
@@ -52,10 +51,6 @@ ${InputType.DISCOVERY_REQUEST} examples:
 - "Show me what data is available"
 - "What kind of questions can I ask?"
 - "Give me some example questions"
-- "What are the capabilities?"
-- "What tables do you have?"
-
-${InputType.INVALID_INPUT} examples:
 - Greetings (hi, hello, good morning)
 - General conversation or chitchat
 - Questions about weather, sports, general knowledge
@@ -64,7 +59,8 @@ ${InputType.INVALID_INPUT} examples:
 
 User input: "${state.question}"
 
-Classify this input and provide a brief reason if it's not a valid query.`;
+If it's clearly asking for specific data from the database tables, classify as ${InputType.VALID_QUERY}.
+Otherwise, classify as ${InputType.DISCOVERY_REQUEST} - the discovery system will handle all non-query inputs appropriately.`;
 
     const result = await structuredLlm.invoke(prompt);
 
