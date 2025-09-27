@@ -1,11 +1,10 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { BaseNode } from './base.node';
 import { InputState, InputType, State } from '../state';
 import { LLM } from '@modules/llm';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { z } from 'zod';
-import { SQL_DATABASE } from '@modules/datasource';
-import { SqlDatabase } from 'langchain/sql_db';
+import { DatabaseService } from '../services/database.service';
 
 const validationOutput = z.object({
   questionType: z
@@ -15,16 +14,11 @@ const validationOutput = z.object({
 });
 
 @Injectable()
-export class ValidateInputNode extends BaseNode implements OnModuleInit {
+export class ValidateInputNode extends BaseNode {
   private readonly logger = new Logger(ValidateInputNode.name);
-  private tableInfo: string;
 
   @Inject(LLM) private readonly llm: BaseChatModel;
-  @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
-
-  async onModuleInit(): Promise<void> {
-    this.tableInfo = await this.db.getTableInfo();
-  }
+  @Inject() private readonly db: DatabaseService;
 
   async execute(state: InputState): Promise<Partial<State>> {
     this.logger.debug(`Validating input: ${state.question}`);
@@ -37,7 +31,7 @@ export class ValidateInputNode extends BaseNode implements OnModuleInit {
 2. ${InputType.DISCOVERY_REQUEST}: Everything else (greetings, help requests, off-topic questions, or unclear inputs)
 
 Database Schema Information:
-${this.tableInfo}
+${this.db.tableInfo}
 
 ${InputType.VALID_QUERY} examples:
 - "How many users are there?"

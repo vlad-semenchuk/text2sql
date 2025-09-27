@@ -1,22 +1,17 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { BaseNode } from './base.node';
 import { State } from '../state';
 import { LLM } from '@modules/llm';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { SQL_DATABASE } from '@modules/datasource';
-import { SqlDatabase } from 'langchain/sql_db';
+import { DatabaseService } from '../services/database.service';
 
 @Injectable()
-export class DiscoveryNode extends BaseNode implements OnModuleInit {
+export class DiscoveryNode extends BaseNode {
   private readonly logger = new Logger(DiscoveryNode.name);
   private tableInfo: string;
 
   @Inject(LLM) private readonly llm: BaseChatModel;
-  @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
-
-  async onModuleInit(): Promise<void> {
-    this.tableInfo = await this.db.getTableInfo();
-  }
+  @Inject() private readonly db: DatabaseService;
 
   async execute(state: State): Promise<Partial<State>> {
     this.logger.debug(`Processing discovery request: ${state.question}`);
@@ -33,7 +28,7 @@ export class DiscoveryNode extends BaseNode implements OnModuleInit {
     const prompt = `You are a helpful assistant for querying a specific database. Based on the schema provided, give a friendly, general response.
 
 Database Schema:
-${this.tableInfo}
+${this.db.tableInfo}
 
 Current Date: ${new Date().toDateString()}
 

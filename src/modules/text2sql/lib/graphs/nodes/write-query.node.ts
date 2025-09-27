@@ -8,6 +8,7 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { BaseNode } from './base.node';
 import { InputStateAnnotation, StateAnnotation } from '../state';
 import { z } from 'zod';
+import { DatabaseService } from '../services/database.service';
 
 const queryOutput = z.object({
   query: z.string().describe('Syntactically valid SQL query.'),
@@ -21,12 +22,10 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
 
   @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
   @Inject(LLM) private readonly llm: BaseChatModel;
+  @Inject() private readonly dbService: DatabaseService;
 
   async onModuleInit(): Promise<void> {
     this.queryPromptTemplate = await pull<ChatPromptTemplate>('langchain-ai/sql-query-system-prompt');
-
-    // TODO: vector store
-    this.tableInfo = await this.db.getTableInfo();
   }
 
   async validateQuery(sqlQuery: string): Promise<{ isValid: boolean; errorMessage?: string }> {
@@ -47,7 +46,7 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
     const fixPrompt = `You are an expert SQL query fixer. Your task is to fix a syntactically invalid SQL query based on the database error message.
 
 Database Schema Information:
-${this.tableInfo}
+${this.dbService.tableInfo}
 
 Database Dialect: ${this.db.appDataSourceOptions.type}
 
