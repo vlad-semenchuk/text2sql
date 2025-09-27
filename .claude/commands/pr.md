@@ -167,9 +167,15 @@ Based on commit analysis, generate concise, descriptive titles:
 - **Technology Context**: Reference NestJS, TypeScript, PostgreSQL when relevant
 - **No Assignees**: Don't assign reviewers or assignees
 
-### Step 5: PR Creation
+### Step 5: Branch Push and PR Creation
 
 ```bash
+# Ensure current branch is pushed to remote
+git ls-remote --exit-code --heads origin $CURRENT_BRANCH || {
+    echo "Pushing current branch to remote..."
+    git push -u origin $CURRENT_BRANCH
+}
+
 # Generate PR title based on commit analysis
 PR_TITLE="[generated title]"
 
@@ -354,5 +360,4 @@ This PR command integrates seamlessly with the existing development workflow:
 4. **Component Focus**: Highlight specific modules or services affected
 5. **Manual Review**: Always review generated title and description before approval
 
-**DO NOT PUSH** automatically - the command assumes the branch is already pushed or will handle the push as part of PR
-creation process.
+The command automatically handles pushing the current branch to remote if it hasn't been pushed yet, as part of the PR creation process.
