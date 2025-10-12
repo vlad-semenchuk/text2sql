@@ -8,7 +8,6 @@ import { DatabaseService } from '../services/database.service';
 @Injectable()
 export class DiscoveryNode extends BaseNode {
   private readonly logger = new Logger(DiscoveryNode.name);
-  private tableInfo: string;
 
   @Inject(LLM) private readonly llm: BaseChatModel;
   @Inject() private readonly db: DatabaseService;

@@ -18,7 +18,6 @@ const queryOutput = z.object({
 export class WriteQueryNode extends BaseNode implements OnModuleInit {
   private readonly logger = new Logger(WriteQueryNode.name);
   private queryPromptTemplate: ChatPromptTemplate;
-  private tableInfo: string;
 
   @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
   @Inject(LLM) private readonly llm: BaseChatModel;
@@ -76,7 +75,7 @@ Return only the corrected SQL query.`;
     const promptValue = await this.queryPromptTemplate.invoke({
       dialect: this.db.appDataSourceOptions.type,
       top_k: 10,
-      table_info: this.tableInfo,
+      table_info: this.dbService.tableInfo,
       input: state.question,
     });
     const result = await structuredLlm.invoke(promptValue);

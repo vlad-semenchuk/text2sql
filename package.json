@@ -85,7 +85,8 @@
     "moduleNameMapper": {
       "@modules/config": "<rootDir>/modules/shared/config/index",
       "@modules/datasource": "<rootDir>/modules/shared/datasource/index",
-      "@modules/llm": "<rootDir>/modules/shared/llm/index"
+      "@modules/llm": "<rootDir>/modules/shared/llm/index",
+      "@modules/text2sql": "<rootDir>/modules/text2sql/index"
     }
   }
 }
