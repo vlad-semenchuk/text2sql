@@ -4,6 +4,7 @@ import { State } from '../state';
 import { LLM } from '@modules/llm';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { DatabaseService } from '../services/database.service';
+import { InputSanitizationService } from '../services/input-sanitization.service';
 
 @Injectable()
 export class DiscoveryNode extends BaseNode {
@@ -11,11 +12,29 @@ export class DiscoveryNode extends BaseNode {
 
   @Inject(LLM) private readonly llm: BaseChatModel;
   @Inject() private readonly db: DatabaseService;
+  @Inject() private readonly inputSanitization: InputSanitizationService;
 
   async execute(state: State): Promise<Partial<State>> {
     this.logger.debug(`Processing discovery request: ${state.question}`);
 
-    const answer = await this.generateDiscoveryResponse(state.question);
+    // Sanitize user input for security
+    const sanitizationResult = await this.inputSanitization.sanitizeInput(state.question, {
+      maxLength: 500,
+      allowEmptyInput: false,
+      logSuspiciousActivity: true,
+    });
+
+    if (sanitizationResult.securityWarnings.length > 0) {
+      this.logger.warn(
+        `Security warnings for discovery input: ${JSON.stringify({
+          warnings: sanitizationResult.securityWarnings,
+          wasModified: sanitizationResult.wasModified,
+          safeVersion: this.inputSanitization.createSafeLogVersion(state.question),
+        })}`,
+      );
+    }
+
+    const answer = await this.generateDiscoveryResponse(sanitizationResult.sanitizedInput);
 
     return {
       ...state,
@@ -24,6 +43,9 @@ export class DiscoveryNode extends BaseNode {
   }
 
   private async generateDiscoveryResponse(question: string): Promise<string> {
+    // Additional escaping for prompt safety
+    const escapedQuestion = this.inputSanitization.escapeForPrompt(question);
+
     const prompt = `You are a helpful assistant for querying a specific database. Based on the schema provided, give a friendly, general response.
 
 Database Schema:
@@ -32,7 +54,7 @@ ${this.db.tableInfo}
 Current Date: ${new Date().toDateString()}
 
 User Question:
-${question}
+${escapedQuestion}
 
 Instructions:
 Analyze the database schema to understand what data is available, then respond appropriately:

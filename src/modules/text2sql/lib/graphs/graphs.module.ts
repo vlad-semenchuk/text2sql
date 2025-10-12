@@ -8,6 +8,7 @@ import { ValidateInputNode } from './nodes/validate-input.node';
 import { DiscoveryNode } from './nodes/discovery.node';
 import { Text2SqlGraph } from './workflows/text2sql.graph';
 import { DatabaseService } from './services/database.service';
+import { InputSanitizationService } from './services/input-sanitization.service';
 
 @Module({
   imports: [DatasourceModule.forFeature(), LLMModule.forFeature()],
@@ -19,6 +20,7 @@ import { DatabaseService } from './services/database.service';
     DiscoveryNode,
     Text2SqlGraph,
     DatabaseService,
+    InputSanitizationService,
   ],
   exports: [Text2SqlGraph],
 })

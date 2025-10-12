@@ -9,6 +9,7 @@ import { BaseNode } from './base.node';
 import { InputStateAnnotation, StateAnnotation } from '../state';
 import { z } from 'zod';
 import { DatabaseService } from '../services/database.service';
+import { InputSanitizationService } from '../services/input-sanitization.service';
 
 const queryOutput = z.object({
   query: z.string().describe('Syntactically valid SQL query.'),
@@ -22,6 +23,7 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
   @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
   @Inject(LLM) private readonly llm: BaseChatModel;
   @Inject() private readonly dbService: DatabaseService;
+  @Inject() private readonly inputSanitization: InputSanitizationService;
 
   async onModuleInit(): Promise<void> {
     this.queryPromptTemplate = await pull<ChatPromptTemplate>('langchain-ai/sql-query-system-prompt');
@@ -38,7 +40,7 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
   }
 
   async fixQuery(invalidQuery: string, errorMessage: string): Promise<string> {
-    this.logger.debug(`Attempting to fix invalid query: ${invalidQuery}`);
+    this.logger.debug(`Attempting to fix invalid query: ${this.inputSanitization.createSafeLogVersion(invalidQuery)}`);
 
     const structuredLlm = this.llm.withStructuredOutput(queryOutput);
 
@@ -70,13 +72,31 @@ Return only the corrected SQL query.`;
   }
 
   async execute(state: typeof InputStateAnnotation.State): Promise<Partial<typeof StateAnnotation.State>> {
-    this.logger.debug(`Writing sql query for question: ${state.question}`);
+    this.logger.debug(`Writing sql query for question: ${this.inputSanitization.createSafeLogVersion(state.question)}`);
+
+    // Additional sanitization check for SQL generation context
+    const sanitizationResult = await this.inputSanitization.sanitizeInput(state.question, {
+      maxLength: 500,
+      allowEmptyInput: false,
+      logSuspiciousActivity: true,
+    });
+
+    if (sanitizationResult.securityWarnings.length > 0) {
+      this.logger.warn(
+        `Security warnings for SQL generation input: ${JSON.stringify({
+          warnings: sanitizationResult.securityWarnings,
+          wasModified: sanitizationResult.wasModified,
+          safeVersion: this.inputSanitization.createSafeLogVersion(state.question),
+        })}`,
+      );
+    }
+
     const structuredLlm = this.llm.withStructuredOutput(queryOutput);
     const promptValue = await this.queryPromptTemplate.invoke({
       dialect: this.db.appDataSourceOptions.type,
       top_k: 10,
       table_info: this.dbService.tableInfo,
-      input: state.question,
+      input: sanitizationResult.sanitizedInput,
     });
     const result = await structuredLlm.invoke(promptValue);
 

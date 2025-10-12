@@ -5,6 +5,7 @@ import { LLM } from '@modules/llm';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { z } from 'zod';
 import { DatabaseService } from '../services/database.service';
+import { InputSanitizationService } from '../services/input-sanitization.service';
 
 const validationOutput = z.object({
   questionType: z
@@ -19,9 +20,27 @@ export class ValidateInputNode extends BaseNode {
 
   @Inject(LLM) private readonly llm: BaseChatModel;
   @Inject() private readonly db: DatabaseService;
+  @Inject() private readonly inputSanitization: InputSanitizationService;
 
   async execute(state: InputState): Promise<Partial<State>> {
     this.logger.debug(`Validating input: ${state.question}`);
+
+    // Sanitize user input before validation
+    const sanitizationResult = await this.inputSanitization.sanitizeInput(state.question, {
+      maxLength: 1000,
+      allowEmptyInput: false,
+      logSuspiciousActivity: true,
+    });
+
+    if (sanitizationResult.securityWarnings.length > 0) {
+      this.logger.warn(
+        `Security warnings for validation input: ${JSON.stringify({
+          warnings: sanitizationResult.securityWarnings,
+          wasModified: sanitizationResult.wasModified,
+          safeVersion: this.inputSanitization.createSafeLogVersion(state.question),
+        })}`,
+      );
+    }
 
     const structuredLlm = this.llm.withStructuredOutput(validationOutput);
 
@@ -51,7 +70,7 @@ ${InputType.DISCOVERY_REQUEST} examples:
 - Empty or unclear inputs
 - Non-database related questions
 
-User input: "${state.question}"
+User input: "${this.inputSanitization.escapeForPrompt(sanitizationResult.sanitizedInput)}"
 
 If it's clearly asking for specific data from the database tables, classify as ${InputType.VALID_QUERY}.
 Otherwise, classify as ${InputType.DISCOVERY_REQUEST} - the discovery system will handle all non-query inputs appropriately.`;
@@ -62,6 +81,7 @@ Otherwise, classify as ${InputType.DISCOVERY_REQUEST} - the discovery system wil
 
     return {
       ...state,
+      question: sanitizationResult.sanitizedInput, // Use sanitized input going forward
       questionType: result.questionType,
       rejectionReason: result.rejectionReason || '',
     };

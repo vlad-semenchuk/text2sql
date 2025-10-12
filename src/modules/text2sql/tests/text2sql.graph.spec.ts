@@ -4,6 +4,7 @@ import { LLM } from '@modules/llm';
 import { SQL_DATABASE } from '@modules/datasource';
 import { InputType } from '../lib/graphs/state';
 import { DatabaseService } from '../lib/graphs/services/database.service';
+import { InputSanitizationService } from '../lib/graphs/services/input-sanitization.service';
 import { ValidateInputNode } from '../lib/graphs/nodes/validate-input.node';
 import { WriteQueryNode } from '../lib/graphs/nodes/write-query.node';
 import { ExecuteQueryNode } from '../lib/graphs/nodes/execute-query.node';
@@ -56,6 +57,7 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
         GenerateAnswerNode,
         DiscoveryNode,
         DatabaseService,
+        InputSanitizationService,
         {
           provide: LLM,
           useValue: mockLLM,
