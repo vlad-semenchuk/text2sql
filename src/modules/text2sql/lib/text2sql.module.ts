@@ -9,5 +9,6 @@ import { GraphsModule } from './graphs';
   imports: [DatasourceModule.forRootFromEnv(), LLMModule.forRootFromEnv(), GraphsModule],
   controllers: [Text2SqlController],
   providers: [Text2SqlService],
+  exports: [Text2SqlService],
 })
 export class Text2SqlModule {}
