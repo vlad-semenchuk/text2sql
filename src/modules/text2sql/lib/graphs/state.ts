@@ -13,7 +13,7 @@ export const InputStateAnnotation = Annotation.Root({
 
 export const StateAnnotation = Annotation.Root({
   question: Annotation<string>,
-  questionType: Annotation<QuestionType>,
+  questionType: Annotation<QuestionType | null>,
   rejectionReason: Annotation<string>,
   query: Annotation<string>,
   result: Annotation<string>,

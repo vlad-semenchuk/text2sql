@@ -10,6 +10,7 @@ import { InputStateAnnotation, StateAnnotation } from '../state';
 import { z } from 'zod';
 import { DatabaseService } from '../services/database.service';
 import { InputSanitizationService } from '../services/input-sanitization.service';
+import { createWriteQueryFixPrompt } from '../prompts/write-query-fix.prompt';
 
 const queryOutput = z.object({
   query: z.string().describe('Syntactically valid SQL query.'),
@@ -44,26 +45,12 @@ export class WriteQueryNode extends BaseNode implements OnModuleInit {
 
     const structuredLlm = this.llm.withStructuredOutput(queryOutput);
 
-    const fixPrompt = `You are an expert SQL query fixer. Your task is to fix a syntactically invalid SQL query based on the database error message.
-
-Database Schema Information:
-${this.dbService.tableInfo}
-
-Database Dialect: ${this.db.appDataSourceOptions.type}
-
-Invalid Query:
-${invalidQuery}
-
-Database Error:
-${errorMessage}
-
-Please fix the SQL query to make it syntactically valid and executable. Focus on:
-- Correcting syntax errors
-- Fixing column/table name issues
-- Ensuring proper SQL dialect compatibility
-- Maintaining the original query intent
-
-Return only the corrected SQL query.`;
+    const fixPrompt = await createWriteQueryFixPrompt(
+      this.dbService.tableInfo,
+      this.db.appDataSourceOptions.type,
+      invalidQuery,
+      errorMessage,
+    );
 
     const result = await structuredLlm.invoke(fixPrompt);
     this.logger.debug(`Fixed query: ${result.query}`);

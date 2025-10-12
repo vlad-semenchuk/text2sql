@@ -22,6 +22,7 @@ describe('Text2SqlGraph', () => {
   let graph: Text2SqlGraph;
   let mockLLM: any;
   let mockDatabase: any;
+  let module: TestingModule;
 
   const mockTableInfo = `Table: users
 Columns: id (integer), name (varchar), email (varchar), created_at (timestamp)
@@ -48,7 +49,7 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
       run: jest.fn().mockResolvedValue([]),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         Text2SqlGraph,
         ValidateInputNode,
@@ -83,8 +84,11 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
     graph.onModuleInit();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
+    if (module) {
+      await module.close();
+    }
   });
 
   describe('Valid Query Path', () => {
@@ -191,6 +195,26 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
       const result = await graph.execute('Hello');
 
       expect(result).toContain('Hello');
+    });
+
+    it('should handle null questionType by routing to discovery', async () => {
+      const structuredLlm = mockLLM.withStructuredOutput();
+
+      // Mock validation response with null questionType - structured
+      structuredLlm.invoke.mockResolvedValueOnce({
+        questionType: null,
+        rejectionReason: 'Could not classify input',
+      });
+
+      // Mock discovery response - normal invoke
+      mockLLM.invoke.mockResolvedValueOnce({
+        content: 'I can help you with database queries. Please ask me something about the data.',
+      });
+
+      const result = await graph.execute('Unclear input');
+
+      expect(result).toContain('database queries');
+      expect(mockDatabase.run).not.toHaveBeenCalled();
     });
   });
 });

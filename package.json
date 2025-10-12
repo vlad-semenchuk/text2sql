@@ -82,6 +82,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "forceExit": true,
+    "detectOpenHandles": true,
     "moduleNameMapper": {
       "@modules/config": "<rootDir>/modules/shared/config/index",
       "@modules/datasource": "<rootDir>/modules/shared/datasource/index",

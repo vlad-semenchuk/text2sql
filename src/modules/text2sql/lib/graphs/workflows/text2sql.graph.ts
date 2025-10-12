@@ -38,6 +38,10 @@ export class Text2SqlGraph implements OnModuleInit {
       .addNode(DiscoveryNode.name, (state: State) => this.discoveryNode.execute(state))
       .addEdge(START, ValidateInputNode.name)
       .addConditionalEdges(ValidateInputNode.name, (state: State) => {
+        if (!state.questionType) {
+          return DiscoveryNode.name;
+        }
+
         switch (state.questionType) {
           case InputType.VALID_QUERY:
             return WriteQueryNode.name;

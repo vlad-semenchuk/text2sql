@@ -3,13 +3,20 @@ import { InputSanitizationService } from '../lib/graphs/services/input-sanitizat
 
 describe('InputSanitizationService', () => {
   let service: InputSanitizationService;
+  let module: TestingModule;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [InputSanitizationService],
     }).compile();
 
     service = module.get<InputSanitizationService>(InputSanitizationService);
+  });
+
+  afterEach(async () => {
+    if (module) {
+      await module.close();
+    }
   });
 
   it('should be defined', () => {
