@@ -24,6 +24,10 @@ Perform an intelligent git rebase workflow with conflict detection and resolutio
 ### Step 1: Pre-rebase Analysis and Safety Checks
 
 ```bash
+# Extract target branch from command arguments (default to main if not provided)
+# When user runs "/rebase develop", the first argument is "develop"
+TARGET_BRANCH=${1:-main}
+
 git status --porcelain
 git fetch origin
 git branch -r | grep "origin/$TARGET_BRANCH"
