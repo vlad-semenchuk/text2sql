@@ -1,11 +1,22 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Text2SqlService } from '@modules/text2sql';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TelegramService {
   private readonly logger = new Logger(TelegramService.name);
+  private threadId: string;
 
   @Inject() private readonly text2SqlService: Text2SqlService;
+
+  constructor() {
+    this.threadId = randomUUID();
+  }
+
+  clearState(): void {
+    this.threadId = randomUUID();
+    this.logger.log(`Thread ID reset to: ${this.threadId}`);
+  }
 
   async processTextQuery(question: string): Promise<string> {
     try {
@@ -16,10 +27,8 @@ export class TelegramService {
         return 'Please provide a valid question.';
       }
 
-      // Execute text2sql conversion
-      const result = await this.text2SqlService.query(question.trim());
+      const result = await this.text2SqlService.query(question.trim(), this.threadId);
 
-      // Format response for Telegram
       return this.formatResponse(result);
     } catch (error) {
       this.logger.error(`Error processing query: ${error.message}`, error.stack);

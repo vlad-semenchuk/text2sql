@@ -24,12 +24,9 @@ export class MessageHandler {
       // Show typing indicator
       await ctx.replyWithChatAction('typing');
 
-      // Process the query
       const response = await this.telegramService.processTextQuery(userMessage);
 
-      // Send response
       await ctx.reply(response, { parse_mode: 'Markdown' });
-
     } catch (error) {
       this.logger.error(`Error handling message: ${error.message}`, error.stack);
       await ctx.reply('Sorry, I encountered an error processing your message. Please try again.');

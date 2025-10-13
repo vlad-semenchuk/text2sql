@@ -49,16 +49,13 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
   }
 
   private setupHandlers() {
-    // Handle /start command
-    this.bot.command('start', (ctx) => this.commandHandler.handleStart(ctx));
+    // Handle /clear command
+    this.bot.command('clear', (ctx) => this.commandHandler.handleClear(ctx));
 
-    // Handle /help command
-    this.bot.command('help', (ctx) => this.commandHandler.handleHelp(ctx));
-
-    // Handle all text messages (SQL queries)
+    // Handle text messages
     this.bot.on('message:text', (ctx) => this.messageHandler.handleTextMessage(ctx));
 
-    // Handle other message types
+    // Handle non text messages
     this.bot.on('message', (ctx) => this.messageHandler.handleNonTextMessage(ctx));
 
     // Error handling
