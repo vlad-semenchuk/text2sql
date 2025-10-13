@@ -114,7 +114,7 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
       // Mock database query execution
       mockDatabase.run.mockResolvedValueOnce([{ count: 100 }]);
 
-      const result = await graph.execute('How many users are there?');
+      const result = await graph.execute('How many users are there?', 'test-thread-id');
 
       expect(result).toBe('There are 100 users in the database.');
       expect(mockDatabase.run).toHaveBeenCalled();
@@ -150,7 +150,7 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ id: 1, name: 'Test' }]);
 
-      const result = await graph.execute('Show me all users');
+      const result = await graph.execute('Show me all users', 'test-thread-id-2');
 
       expect(result).toBe('Here are the users.');
     });
@@ -172,7 +172,7 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
           'This database contains users and orders tables. You can ask questions like: How many users are there? What are the recent orders?',
       });
 
-      const result = await graph.execute('What can you help me with?');
+      const result = await graph.execute('What can you help me with?', 'test-thread-id-3');
 
       expect(result).toContain('users and orders tables');
       expect(mockDatabase.run).not.toHaveBeenCalled();
@@ -192,7 +192,7 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
         content: 'Hello! I can help you query the database.',
       });
 
-      const result = await graph.execute('Hello');
+      const result = await graph.execute('Hello', 'test-thread-id-4');
 
       expect(result).toContain('Hello');
     });
@@ -211,7 +211,7 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
         content: 'I can help you with database queries. Please ask me something about the data.',
       });
 
-      const result = await graph.execute('Unclear input');
+      const result = await graph.execute('Unclear input', 'test-thread-id-5');
 
       expect(result).toContain('database queries');
       expect(mockDatabase.run).not.toHaveBeenCalled();
