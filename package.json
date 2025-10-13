@@ -31,6 +31,7 @@
     "class-validator": "^0.14.2",
     "dotenv": "^17.2.2",
     "express": "^4.18.0",
+    "grammy": "^1.38.3",
     "joi": "^18.0.1",
     "langchain": "^0.3.34",
     "pg": "^8.16.3",
@@ -88,7 +89,8 @@
       "@modules/config": "<rootDir>/modules/shared/config/index",
       "@modules/datasource": "<rootDir>/modules/shared/datasource/index",
       "@modules/llm": "<rootDir>/modules/shared/llm/index",
-      "@modules/text2sql": "<rootDir>/modules/text2sql/index"
+      "@modules/text2sql": "<rootDir>/modules/text2sql/index",
+      "@modules/bot": "<rootDir>/modules/bot/index"
     }
   }
 }

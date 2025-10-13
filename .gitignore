@@ -29,5 +29,8 @@ coverage/
 # Temporary files
 *.tmp
 
+# Context folder
+context/
+
 # Claude
 .claude/settings.local.json

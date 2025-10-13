@@ -1,5 +1,5 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { CompiledStateGraph, END, START, StateGraph } from '@langchain/langgraph';
+import { CompiledStateGraph, END, MemorySaver, START, StateGraph } from '@langchain/langgraph';
 import { WriteQueryNode } from '../nodes/write-query.node';
 import { ExecuteQueryNode } from '../nodes/execute-query.node';
 import { GenerateAnswerNode } from '../nodes/generate-answer.node';
@@ -18,11 +18,13 @@ export class Text2SqlGraph implements OnModuleInit {
   private graph: CompiledStateGraph<State, Partial<State>, any>;
 
   onModuleInit(): void {
-    this.graph = this.createGraph().compile();
+    const checkpointer = new MemorySaver();
+    this.graph = this.createGraph().compile({ checkpointer });
   }
 
-  async execute(question: string): Promise<string> {
-    const result = await this.graph.invoke({ question });
+  async execute(question: string, threadId: string): Promise<string> {
+    const config = { configurable: { thread_id: threadId } };
+    const result = await this.graph.invoke({ question }, config);
 
     return result.answer as string;
   }

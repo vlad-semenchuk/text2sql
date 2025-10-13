@@ -25,7 +25,10 @@
         "src/modules/shared/llm/index"
       ],
       "@modules/text2sql": [
-        "src/libs/text2sql/src/index"
+        "src/modules/text2sql/index"
+      ],
+      "@modules/bot": [
+        "src/modules/bot/index"
       ]
     },
     "incremental": true,
