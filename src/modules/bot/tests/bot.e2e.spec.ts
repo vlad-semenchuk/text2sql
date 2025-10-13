@@ -14,7 +14,7 @@ interface MockContext extends Partial<Context> {
   replyWithChatAction: jest.MockedFunction<any>;
 }
 
-const createMockContext = (message?: string): MockContext => {
+const createMockContext = (message?: string, userId = 123456): MockContext => {
   const replyMock = jest.fn().mockResolvedValue({});
   const replyWithChatActionMock = jest.fn().mockResolvedValue({});
 
@@ -24,12 +24,17 @@ const createMockContext = (message?: string): MockContext => {
           message_id: 1,
           date: Date.now(),
           chat: {
-            id: 123456,
+            id: userId,
             type: 'private' as const,
           },
           text: message,
         } as any)
       : undefined,
+    from: {
+      id: userId,
+      is_bot: false,
+      first_name: 'Test',
+    } as any,
     reply: replyMock,
     replyWithChatAction: replyWithChatActionMock,
   };
@@ -105,17 +110,25 @@ describe('Bot End-to-End Workflow', () => {
       expect(telegramService).toBeDefined();
     });
 
-    it('should have a unique threadId initialized', () => {
-      // Access private property through reflection for testing
-      const threadId = (telegramService as any).threadId;
-      expect(threadId).toBeDefined();
-      expect(typeof threadId).toBe('string');
-      expect(threadId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    it('should create unique threadId per user', async () => {
+      const userId1 = 123456;
+      const userId2 = 789012;
+
+      // Process queries for different users
+      await telegramService.processTextQuery('test1', userId1);
+      await telegramService.processTextQuery('test2', userId2);
+
+      // Verify different thread IDs are used
+      const calls = text2SqlService.query.mock.calls;
+      expect(calls[0][1]).not.toBe(calls[1][1]); // Different thread IDs
+      expect(calls[0][1]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+      expect(calls[1][1]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     });
 
     it('should process text query successfully', async () => {
       const question = 'Show me all users';
-      const result = await telegramService.processTextQuery(question);
+      const userId = 123456;
+      const result = await telegramService.processTextQuery(question, userId);
 
       expect(text2SqlService.query).toHaveBeenCalledWith(
         question,
@@ -125,7 +138,7 @@ describe('Bot End-to-End Workflow', () => {
     });
 
     it('should handle empty question', async () => {
-      const result = await telegramService.processTextQuery('');
+      const result = await telegramService.processTextQuery('', 123456);
       expect(result).toBe('Please provide a valid question.');
     });
 
@@ -133,28 +146,36 @@ describe('Bot End-to-End Workflow', () => {
       const queryMock = text2SqlService.query as jest.MockedFunction<typeof text2SqlService.query>;
       queryMock.mockRejectedValueOnce(new Error('Service error'));
 
-      const result = await telegramService.processTextQuery('test question');
+      const result = await telegramService.processTextQuery('test question', 123456);
       expect(result).toBe('Sorry, I encountered an error while processing your question. Please try again.');
     });
 
-    it('should clear state and generate new threadId', () => {
-      const originalThreadId = (telegramService as any).threadId;
+    it('should clear user state and generate new threadId for specific user', async () => {
+      const userId = 123456;
 
-      telegramService.clearState();
+      // Get initial thread ID by making a query
+      await telegramService.processTextQuery('first query', userId);
+      const originalThreadId = text2SqlService.query.mock.calls[0][1];
 
-      const newThreadId = (telegramService as any).threadId;
+      // Clear user state
+      telegramService.clearUserState(userId);
+
+      // Make another query to get new thread ID
+      await telegramService.processTextQuery('second query', userId);
+      const newThreadId = text2SqlService.query.mock.calls[1][1];
+
       expect(newThreadId).not.toBe(originalThreadId);
       expect(newThreadId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     });
 
-    it('should use new threadId after clearing state', async () => {
-      // Clear state to get new threadId
-      telegramService.clearState();
-      const newThreadId = (telegramService as any).threadId;
+    it('should maintain same threadId for same user across queries', async () => {
+      const userId = 123456;
 
-      await telegramService.processTextQuery('test question');
+      await telegramService.processTextQuery('first query', userId);
+      await telegramService.processTextQuery('second query', userId);
 
-      expect(text2SqlService.query).toHaveBeenCalledWith('test question', newThreadId);
+      const calls = text2SqlService.query.mock.calls;
+      expect(calls[0][1]).toBe(calls[1][1]); // Same thread ID for same user
     });
   });
 
@@ -164,14 +185,31 @@ describe('Bot End-to-End Workflow', () => {
     });
 
     it('should handle /clear command', async () => {
+      const userId = 123456;
+      const mockCtx = createMockContext('', userId) as Context;
+
+      // Get initial thread ID by making a query
+      await telegramService.processTextQuery('initial query', userId);
+      const originalThreadId = text2SqlService.query.mock.calls[0][1];
+
+      // Clear user state
+      await commandHandler.handleClear(mockCtx);
+
+      // Make another query to verify new thread ID
+      await telegramService.processTextQuery('after clear query', userId);
+      const newThreadId = text2SqlService.query.mock.calls[1][1];
+
+      expect(newThreadId).not.toBe(originalThreadId);
+      expect(mockCtx.reply).toHaveBeenCalledWith('Your conversation state has been cleared');
+    });
+
+    it('should handle /clear command without user ID', async () => {
       const mockCtx = createMockContext() as Context;
-      const originalThreadId = (telegramService as any).threadId;
+      mockCtx.from = undefined; // Simulate missing user info
 
       await commandHandler.handleClear(mockCtx);
 
-      const newThreadId = (telegramService as any).threadId;
-      expect(newThreadId).not.toBe(originalThreadId);
-      expect(mockCtx.reply).toHaveBeenCalledWith('State cleared');
+      expect(mockCtx.reply).toHaveBeenCalledWith('Unable to identify user. Please try again.');
     });
   });
 
@@ -181,7 +219,8 @@ describe('Bot End-to-End Workflow', () => {
     });
 
     it('should handle text messages', async () => {
-      const mockCtx = createMockContext('Show me all users') as Context;
+      const userId = 123456;
+      const mockCtx = createMockContext('Show me all users', userId) as Context;
 
       await messageHandler.handleTextMessage(mockCtx);
 
@@ -190,7 +229,8 @@ describe('Bot End-to-End Workflow', () => {
     });
 
     it('should skip command messages', async () => {
-      const mockCtx = createMockContext('/start') as Context;
+      const userId = 123456;
+      const mockCtx = createMockContext('/start', userId) as Context;
 
       await messageHandler.handleTextMessage(mockCtx);
 
@@ -199,7 +239,9 @@ describe('Bot End-to-End Workflow', () => {
     });
 
     it('should handle messages without text', async () => {
-      const mockCtx = createMockContext() as Context;
+      const userId = 123456;
+      const mockCtx = createMockContext('', userId) as Context;
+      mockCtx.message = undefined; // No message
 
       await messageHandler.handleTextMessage(mockCtx);
 
@@ -207,8 +249,19 @@ describe('Bot End-to-End Workflow', () => {
       expect(mockCtx.reply).not.toHaveBeenCalled();
     });
 
+    it('should handle messages without user ID', async () => {
+      const mockCtx = createMockContext('test message') as Context;
+      mockCtx.from = undefined; // No user info
+
+      await messageHandler.handleTextMessage(mockCtx);
+
+      expect(mockCtx.replyWithChatAction).not.toHaveBeenCalled();
+      expect(mockCtx.reply).toHaveBeenCalledWith('Unable to identify user. Please try again.');
+    });
+
     it('should handle telegram service errors', async () => {
-      const mockCtx = createMockContext('test question') as Context;
+      const userId = 123456;
+      const mockCtx = createMockContext('test question', userId) as Context;
       text2SqlService.query.mockRejectedValueOnce(new Error('Service error'));
 
       await messageHandler.handleTextMessage(mockCtx);
@@ -221,7 +274,9 @@ describe('Bot End-to-End Workflow', () => {
     });
 
     it('should handle non-text messages', async () => {
-      const mockCtx = createMockContext() as Context;
+      const userId = 123456;
+      const mockCtx = createMockContext('', userId) as Context;
+      mockCtx.message = undefined; // Non-text message
 
       await messageHandler.handleNonTextMessage(mockCtx);
 
@@ -233,11 +288,14 @@ describe('Bot End-to-End Workflow', () => {
 
   describe('End-to-End Workflow', () => {
     it('should complete full conversation workflow', async () => {
-      const mockCtx = createMockContext('Show me all active users') as Context;
-      const originalThreadId = (telegramService as any).threadId;
+      const userId = 123456;
+      const mockCtx = createMockContext('Show me all active users', userId) as Context;
 
       // 1. User sends a text message
       await messageHandler.handleTextMessage(mockCtx);
+
+      // Get the thread ID from the first call
+      const originalThreadId = text2SqlService.query.mock.calls[0][1];
 
       // Verify the workflow
       expect(mockCtx.replyWithChatAction).toHaveBeenCalledWith('typing');
@@ -245,59 +303,66 @@ describe('Bot End-to-End Workflow', () => {
       expect(mockCtx.reply).toHaveBeenCalledWith('SELECT * FROM users;', { parse_mode: 'Markdown' });
 
       // 2. User clears the conversation
-      const clearCtx = createMockContext() as Context;
+      const clearCtx = createMockContext('', userId) as Context;
       await commandHandler.handleClear(clearCtx);
 
       // Verify state is cleared
-      const newThreadId = (telegramService as any).threadId;
-      expect(newThreadId).not.toBe(originalThreadId);
-      expect(clearCtx.reply).toHaveBeenCalledWith('State cleared');
+      expect(clearCtx.reply).toHaveBeenCalledWith('Your conversation state has been cleared');
 
       // 3. User sends another message with new thread context
-      const newMsgCtx = createMockContext('Count total orders') as Context;
+      const newMsgCtx = createMockContext('Count total orders', userId) as Context;
       await messageHandler.handleTextMessage(newMsgCtx);
 
       // Verify new threadId is used
+      const newThreadId = text2SqlService.query.mock.calls[1][1];
+      expect(newThreadId).not.toBe(originalThreadId);
       expect(text2SqlService.query).toHaveBeenCalledWith('Count total orders', newThreadId);
     });
 
-    it('should handle multiple conversation states independently', async () => {
-      // Create a new module for second instance to simulate different bot instances
-      const module2 = await Test.createTestingModule({
-        imports: [BotModule],
-      })
-        .overrideProvider(Text2SqlService)
-        .useValue(text2SqlService)
-        .compile();
+    it('should handle multiple users independently', async () => {
+      const user1Id = 123456;
+      const user2Id = 789012;
 
-      const service1 = telegramService; // Use existing instance
-      const service2 = module2.get<TelegramService>(TelegramService);
+      // Both users send queries
+      await telegramService.processTextQuery('User 1 Query', user1Id);
+      await telegramService.processTextQuery('User 2 Query', user2Id);
 
-      const threadId1 = (service1 as any).threadId;
-      const threadId2 = (service2 as any).threadId;
+      // Verify different thread IDs are used
+      const calls = text2SqlService.query.mock.calls;
+      const user1ThreadId = calls[0][1];
+      const user2ThreadId = calls[1][1];
 
-      // Different instances should have different threadIds
-      expect(threadId1).not.toBe(threadId2);
+      expect(user1ThreadId).not.toBe(user2ThreadId);
+      expect(text2SqlService.query).toHaveBeenCalledWith('User 1 Query', user1ThreadId);
+      expect(text2SqlService.query).toHaveBeenCalledWith('User 2 Query', user2ThreadId);
 
-      // Both should work independently
-      await service1.processTextQuery('Query 1');
-      await service2.processTextQuery('Query 2');
+      // User 1 clears their state
+      telegramService.clearUserState(user1Id);
 
-      expect(text2SqlService.query).toHaveBeenCalledWith('Query 1', threadId1);
-      expect(text2SqlService.query).toHaveBeenCalledWith('Query 2', threadId2);
+      // Both users send more queries
+      await telegramService.processTextQuery('User 1 After Clear', user1Id);
+      await telegramService.processTextQuery('User 2 Continues', user2Id);
 
-      await module2.close();
+      const user1NewThreadId = calls[2][1];
+      const user2ContinuedThreadId = calls[3][1];
+
+      // User 1 should have new thread ID, User 2 should keep the same
+      expect(user1NewThreadId).not.toBe(user1ThreadId);
+      expect(user2ContinuedThreadId).toBe(user2ThreadId);
     });
 
-    it('should maintain thread context across multiple queries', async () => {
-      const threadId = (telegramService as any).threadId;
+    it('should maintain thread context across multiple queries for same user', async () => {
+      const userId = 123456;
 
-      // Send multiple queries
-      await telegramService.processTextQuery('First query');
-      await telegramService.processTextQuery('Second query');
-      await telegramService.processTextQuery('Third query');
+      // Send multiple queries for same user
+      await telegramService.processTextQuery('First query', userId);
+      await telegramService.processTextQuery('Second query', userId);
+      await telegramService.processTextQuery('Third query', userId);
 
-      // All should use same threadId
+      const calls = text2SqlService.query.mock.calls;
+      const threadId = calls[0][1];
+
+      // All should use same threadId for same user
       expect(text2SqlService.query).toHaveBeenNthCalledWith(1, 'First query', threadId);
       expect(text2SqlService.query).toHaveBeenNthCalledWith(2, 'Second query', threadId);
       expect(text2SqlService.query).toHaveBeenNthCalledWith(3, 'Third query', threadId);

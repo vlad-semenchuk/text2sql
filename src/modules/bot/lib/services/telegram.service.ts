@@ -5,20 +5,17 @@ import { randomUUID } from 'crypto';
 @Injectable()
 export class TelegramService {
   private readonly logger = new Logger(TelegramService.name);
-  private threadId: string;
+  private readonly userThreadIds = new Map<number, string>();
 
   @Inject() private readonly text2SqlService: Text2SqlService;
 
-  constructor() {
-    this.threadId = randomUUID();
+  clearUserState(userId: number): void {
+    const newThreadId = randomUUID();
+    this.userThreadIds.set(userId, newThreadId);
+    this.logger.log(`Thread ID reset for user ${userId} to: ${newThreadId}`);
   }
 
-  clearState(): void {
-    this.threadId = randomUUID();
-    this.logger.log(`Thread ID reset to: ${this.threadId}`);
-  }
-
-  async processTextQuery(question: string): Promise<string> {
+  async processTextQuery(question: string, userId: number): Promise<string> {
     try {
       this.logger.log(`Processing query: ${question}`);
 
@@ -27,13 +24,24 @@ export class TelegramService {
         return 'Please provide a valid question.';
       }
 
-      const result = await this.text2SqlService.query(question.trim(), this.threadId);
+      const threadId = this.getOrCreateThreadId(userId);
+      const result = await this.text2SqlService.query(question.trim(), threadId);
 
       return this.formatResponse(result);
     } catch (error) {
       this.logger.error(`Error processing query: ${error.message}`, error.stack);
       return 'Sorry, I encountered an error while processing your question. Please try again.';
     }
+  }
+
+  private getOrCreateThreadId(userId: number): string {
+    let threadId = this.userThreadIds.get(userId);
+    if (!threadId) {
+      threadId = randomUUID();
+      this.userThreadIds.set(userId, threadId);
+      this.logger.log(`Created new thread ID for user ${userId}: ${threadId}`);
+    }
+    return threadId;
   }
 
   private formatResponse(result: any): string {

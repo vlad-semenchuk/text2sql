@@ -14,8 +14,6 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   constructor() {
     this.config = getBotConfig();
-    this.bot = new Bot(this.config.botToken);
-    this.setupHandlers();
   }
 
   async onModuleInit() {
@@ -25,17 +23,20 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
+      this.logger.log('Initializing Telegram bot...');
+      this.bot = new Bot(this.config.botToken);
+      this.setupHandlers();
       this.logger.log('Starting Telegram bot...');
       await this.bot.start();
       this.logger.log('Telegram bot started successfully');
     } catch (error) {
-      this.logger.error(`Failed to start bot: ${error.message}`, error.stack);
+      this.logger.error(`Failed to initialize and start bot: ${error.message}`, error.stack);
       throw error;
     }
   }
 
   async onModuleDestroy() {
-    if (!this.config.enabled) {
+    if (!this.config.enabled || !this.bot) {
       return;
     }
 

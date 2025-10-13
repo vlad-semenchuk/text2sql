@@ -11,8 +11,14 @@ export class MessageHandler {
   async handleTextMessage(ctx: Context): Promise<void> {
     try {
       const userMessage = ctx.message?.text;
+      const userId = ctx.from?.id;
 
       if (!userMessage) {
+        return;
+      }
+
+      if (!userId) {
+        await ctx.reply('Unable to identify user. Please try again.');
         return;
       }
 
@@ -24,7 +30,7 @@ export class MessageHandler {
       // Show typing indicator
       await ctx.replyWithChatAction('typing');
 
-      const response = await this.telegramService.processTextQuery(userMessage);
+      const response = await this.telegramService.processTextQuery(userMessage, userId);
 
       await ctx.reply(response, { parse_mode: 'Markdown' });
     } catch (error) {
