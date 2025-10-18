@@ -3,7 +3,6 @@ import { PromptTemplate } from '@langchain/core/prompts';
 export const generateAnswerPrompt =
   PromptTemplate.fromTemplate(`Given the following user question, corresponding SQL query, and SQL result, answer the user question.
 
-Question: {question}
 SQL Query: {query}
 SQL Result: {result}
 
@@ -19,9 +18,8 @@ Instructions for formatting the response:
 9. Keep the response conversational and helpful
 10. You may offer to provide more information if appropriate, but phrase it naturally (e.g., "Would you like more details?" not "Would you like to see other columns?")`);
 
-export const createGenerateAnswerPrompt = async (question: string, query: string, result: string) => {
+export const createGenerateAnswerPrompt = async (query: string, result: string) => {
   return await generateAnswerPrompt.format({
-    question,
     query,
     result,
   });

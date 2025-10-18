@@ -22,16 +22,16 @@ Please fix the SQL query to make it syntactically valid and executable. Focus on
 
 Return only the corrected SQL query.`);
 
-export const createWriteQueryFixPrompt = async (
-  tableInfo: string,
-  dialect: string,
-  invalidQuery: string,
-  errorMessage: string,
-) => {
+export const createWriteQueryFixPrompt = async (params: {
+  tableInfo: string;
+  dialect: string;
+  invalidQuery: string;
+  errorMessage: string;
+}) => {
   return await writeQueryFixPrompt.format({
-    tableInfo,
-    dialect,
-    invalidQuery,
-    errorMessage,
+    tableInfo: params.tableInfo,
+    dialect: params.dialect,
+    invalidQuery: params.invalidQuery,
+    errorMessage: params.errorMessage,
   });
 };
