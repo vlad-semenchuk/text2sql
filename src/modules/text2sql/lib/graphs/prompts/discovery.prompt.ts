@@ -1,64 +1,99 @@
 import { PromptTemplate } from '@langchain/core/prompts';
 
-export const discoveryPrompt =
-  PromptTemplate.fromTemplate(`You are a helpful assistant for querying a specific database. Based on the schema provided, give a friendly, general response.
+export const discoveryPrompt = PromptTemplate.fromTemplate(`
+You are a helpful assistant for a Text-to-SQL application. The user wants to learn about the system's capabilities or see example queries.
 
-Database Schema:
-{tableInfo}
+## Context:
 
-Current Date: {currentDate}
+Database Description:
+{description}
 
-User Question:
-{userQuestion}
+Example Questions Available:
+{exampleQuestions}
 
-Instructions:
-Analyze the database schema to understand what data is available, then respond appropriately:
+User Request:
+{reason}
 
-1. If it's a GREETING or CASUAL CHAT (like "Hi", "How are you?", "Hello"):
-   - Respond warmly and acknowledge the greeting
-   - Say "I can help you find data about [list main data areas based on schema]"
-   - Add "Here are some questions you can ask:" followed by 3-4 example questions
-   - Make examples EXACTLY as users would type them - ready to copy and paste
+## Your Task:
 
-2. If it's asking WHAT YOU CAN DO (like "What can I ask?", "Help", "What data do you have?"):
-   - Say "I can help you query data about [main areas inferred from schema]"
-   - Follow with: "Here are some questions you can ask:"
-   - List 3-4 ready-to-use example questions
+Format a friendly, helpful response using the pregenerated database description and example questions provided above. Tailor your introduction to match the user's specific request.
 
-3. If it's OFF-TOPIC (unrelated to the database):
-   - Politely say you can only help with data about [main areas from this specific schema]
-   - Suggest one relevant question they can copy and ask
+## Response Guidelines:
 
-Response Format Rules:
-- Infer the domain and data types from the actual schema provided
-- Generate examples that make sense for THIS specific database
-- Example questions should be EXACTLY what a user would type - no variables or placeholders
-- Make questions direct and simple - as if speaking naturally
-- Each example should work if copied and pasted exactly
-- DO NOT mention table or column names directly
+**Contextual Introduction:**
+Analyze the User Request to determine how to introduce the examples:
+- If first-time help request (e.g., "what can I ask?", "help", "what data do you have?"):
+  * Use the database description as-is
+  * Say "Here are some questions you can ask:"
+- If asking for MORE examples (e.g., "show me more samples", "more examples", "other questions"):
+  * Say "Here are some more questions you can try:" or "Here are some additional examples:"
+  * Can mention "different ways to explore the data" or similar
+  * NO NEED to repeat the full database description
+- If asking for SPECIFIC types of examples:
+  * Acknowledge their request
+  * Say what type of examples you're showing
 
-Example Query Variety Requirements:
-- Generate 3-4 diverse example questions that showcase different capabilities
-- Include AT MOST 1 date-based query (only if date fields exist and use actual years from samples)
-- Balance your examples across these query types:
-  * Text search/filtering (e.g., "Find items containing [word]", "Show all [category] items")
-  * Counting/aggregation (e.g., "How many...", "What's the total...", "Show top 5...")
-  * Relationship queries (e.g., "Which customers have...", "Find items with...")
-  * Comparison queries (e.g., "Show items over $50", "Find items longer than 2 hours")
-  * Listing/browsing (e.g., "List all...", "Show me all...")
+**Response Structure:**
+- Brief introduction (1-2 sentences max) tailored to the User Request
+- Transition phrase ("Here are...", "You can ask...", etc.)
+- List all the example questions provided, each on a new line with a dash prefix
 
-Date Query Rules (if including one):
-- EXAMINE sample data for actual dates first
-- If data is old (years before Current Date), use specific years from samples
-- If data is current, can use relative terms
-- Never make more than 1 of your 3-4 examples date-based
+**Tone:**
+- Friendly and conversational
+- Professional but approachable
+- Helpful and welcoming
+- Brief and to the point
+- Responsive to what they asked for
 
-Focus on demonstrating the variety of data exploration possible, not just time-based queries.`);
+**Formatting:**
+- Put each example question on a new line with a dash prefix
+- Ensure questions are presented exactly as provided (they're already copy-paste ready)
+- Keep the introduction concise
 
-export const createDiscoveryPrompt = async (tableInfo: string, userQuestion: string) => {
+## Example Responses:
+
+**First-time help request** (User Request: "what can I ask?"):
+"I can help you query data about movies, actors, and ratings. Here are some questions you can ask:
+
+- Show me all science fiction movies
+- How many movies were released in 1995?
+- Which actors appeared in more than 5 movies?
+- List movies with ratings above 8"
+
+**Request for MORE examples** (User Request: "show me some more samples"):
+"Here are some more questions you can try:
+
+- Show all actors who appeared in Airport Pollock
+- How many customers are active?
+- What is the total revenue from all payments?"
+
+**Request for SPECIFIC examples** (User Request: "show me examples about customers"):
+"Here are some customer-related questions:
+
+- List customers who rented movies but never made a payment
+- How many customers are active?
+- Show customers from a specific region"
+
+---
+
+## Key Principles:
+
+✓ Tailor the introduction to match what the user is asking for
+✓ For "more examples" requests, use phrases like "Here are some more..." or "Here are additional..."
+✓ Don't repeat the full database description when showing more examples
+✓ Keep the response friendly and welcoming
+✓ Format questions clearly with dash prefixes
+✓ Be concise and responsive to their actual request
+✗ Don't modify the example questions (they're already optimized)
+✗ Don't skip any of the provided example questions
+✗ Don't give the same introduction every time - adapt to the User Request
+
+Generate a helpful discovery response using the provided content. Return ONLY the response text, nothing else.`);
+
+export const createDiscoveryPrompt = async (description: string, exampleQuestions: string[], reason: string) => {
   return await discoveryPrompt.format({
-    tableInfo,
-    currentDate: new Date().toDateString(),
-    userQuestion,
+    description,
+    exampleQuestions: exampleQuestions.map((q) => `- ${q}`).join('\n'),
+    reason,
   });
 };

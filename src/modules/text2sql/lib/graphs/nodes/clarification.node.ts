@@ -3,22 +3,25 @@ import { BaseNode } from './base.node';
 import { State } from '../state';
 import { LLM } from '@modules/llm';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { createGenerateAnswerPrompt } from '../prompts/generate-answer.prompt';
 import { SystemMessage } from '@langchain/core/messages';
+import { createClarificationPrompt } from '../prompts';
 
 @Injectable()
-export class GenerateAnswerNode extends BaseNode {
-  private readonly logger = new Logger(GenerateAnswerNode.name);
+export class ClarificationNode extends BaseNode {
+  private readonly logger = new Logger(ClarificationNode.name);
 
   @Inject(LLM) private readonly llm: BaseChatModel;
 
   async execute(state: State): Promise<Partial<State>> {
-    this.logger.debug(`Generating answer`, state);
+    this.logger.debug(`Clarifying the query...`);
 
-    const systemPrompt = await createGenerateAnswerPrompt(state.query, state.result);
+    const systemPrompt = await createClarificationPrompt(state.intent.reason);
     const systemMessage = new SystemMessage(systemPrompt);
 
     const response = await this.llm.invoke([systemMessage, ...state.messages]);
-    return { answer: response.content as string };
+
+    return {
+      answer: response.content as string,
+    };
   }
 }

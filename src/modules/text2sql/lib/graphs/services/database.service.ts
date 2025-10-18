@@ -1,25 +1,59 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { SQL_DATABASE } from '@modules/datasource';
 import { SqlDatabase } from 'langchain/sql_db';
+import { LLM } from '@modules/llm';
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { createPregenerateDiscoveryPrompt } from '../prompts';
+import { z } from 'zod';
+
+const DiscoveryContentSchema = z.object({
+  description: z.string().describe('A 1-2 sentence description of what data is available in the database'),
+  exampleQuestions: z.array(z.string()).min(10).max(15).describe('10-15 diverse example questions users can ask'),
+});
+
+type DiscoveryContent = z.infer<typeof DiscoveryContentSchema>;
 
 @Injectable()
 export class DatabaseService implements OnModuleInit {
   private readonly logger = new Logger(DatabaseService.name);
 
   @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
+  @Inject(LLM) private readonly llm: BaseChatModel;
 
   private dbSchema: string;
+  private dbDiscoveryContent: DiscoveryContent;
 
   get tableInfo(): string {
     return this.dbSchema;
   }
 
+  get discoveryContent(): DiscoveryContent {
+    return this.dbDiscoveryContent;
+  }
+
   async onModuleInit(): Promise<void> {
     try {
+      this.logger.log('Loading database schema...');
       this.dbSchema = await this.db.getTableInfo();
-    } catch (error) {
-      this.logger.error('Failed to load database schema', error);
-      throw new Error('Database schema initialization failed');
+
+      this.logger.log('Pregenerating discovery content...');
+      await this.pregenerateDiscoveryContent();
+      this.logger.log('Finished loading the database schema');
+    } catch (_) {
+      throw new Error('Database service initialization failed');
+    }
+  }
+
+  private async pregenerateDiscoveryContent(): Promise<void> {
+    try {
+      const prompt = await createPregenerateDiscoveryPrompt(this.dbSchema);
+      const structuredLlm = this.llm.withStructuredOutput<DiscoveryContent>(DiscoveryContentSchema);
+
+      this.dbDiscoveryContent = await structuredLlm.invoke(prompt);
+
+      this.logger.debug(`Pregenerated ${this.dbDiscoveryContent.exampleQuestions.length} example questions`);
+    } catch (_) {
+      throw new Error('Discovery content pregeneration failed');
     }
   }
 }
