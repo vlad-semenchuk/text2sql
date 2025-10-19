@@ -1,0 +1,36 @@
+# GitHub CODEOWNERS File
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global fallback - require review from repository owner for any unspecified files
+* @vlad-semenchuk
+
+# Workflow Security - Require review for all GitHub Actions workflows
+# These files can access secrets, modify repository, and execute code
+.github/workflows/ @vlad-semenchuk
+
+# Claude Code Configuration - Require review for Claude Code related configs
+# These control AI behavior and tool access
+.claude/ @vlad-semenchuk
+
+# Security-sensitive configuration files
+.github/CODEOWNERS @vlad-semenchuk
+.gitignore @vlad-semenchuk
+
+# Package management - dependency changes should be reviewed
+package.json @vlad-semenchuk
+package-lock.json @vlad-semenchuk
+bun.lockb @vlad-semenchuk
+
+# Environment and configuration files
+.env* @vlad-semenchuk
+*.config.* @vlad-semenchuk
+tsconfig.json @vlad-semenchuk
+
+# Documentation that affects project setup or security
+README.md @vlad-semenchuk
+CLAUDE.md @vlad-semenchuk
+SECURITY.md @vlad-semenchuk
+
+# Database migrations and schema changes
+src/database/ @vlad-semenchuk
+src/**/migrations/ @vlad-semenchuk
