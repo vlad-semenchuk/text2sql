@@ -32,5 +32,13 @@ coverage/
 # Context folder
 context/
 
+# Cache
+.cache/
+
 # Claude
 .claude/settings.local.json
+
+# Database dumps
+db-init/*.tar
+db-init/*.sql
+db-init/*.zip

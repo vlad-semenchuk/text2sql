@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { Env } from '@modules/config';
 import { Database } from './database';
 import { DatasourceService } from './datasource.service';
+import { DatasourceHealthIndicator } from './datasource.health';
 
 @Module({})
 export class DatasourceModule {
@@ -17,6 +18,7 @@ export class DatasourceModule {
       imports: [TypeOrmModule.forRootAsync(DatasourceConfig(options).asProvider())],
       providers: [
         DatasourceService,
+        DatasourceHealthIndicator,
         {
           provide: SQL_DATABASE,
           inject: [DataSource, DatasourceService],
@@ -29,7 +31,7 @@ export class DatasourceModule {
           },
         },
       ],
-      exports: [SQL_DATABASE],
+      exports: [SQL_DATABASE, DatasourceHealthIndicator],
     };
   }
 
