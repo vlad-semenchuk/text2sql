@@ -2,7 +2,6 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { ChromaClient, Collection } from 'chromadb';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 import { VectorStoreModuleOptions } from './types';
-import { VectorStoreConfig } from './vector-store.config';
 import { VECTOR_STORE } from './constants';
 import { VectorStoreService } from './vector-store.service';
 import { Env } from '@modules/config';

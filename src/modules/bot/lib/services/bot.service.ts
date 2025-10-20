@@ -16,7 +16,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     this.config = getBotConfig();
   }
 
-  async onModuleInit() {
+  onModuleInit() {
     if (!this.config.enabled) {
       this.logger.log('Bot is disabled via configuration');
       return;
