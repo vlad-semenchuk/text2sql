@@ -73,11 +73,17 @@ describe('Bot End-to-End Workflow', () => {
     };
 
     module = await Test.createTestingModule({
-      imports: [BotModule],
-    })
-      .overrideProvider(Text2SqlService)
-      .useValue(text2SqlServiceMock)
-      .compile();
+      providers: [
+        BotService,
+        TelegramService,
+        CommandHandler,
+        MessageHandler,
+        {
+          provide: Text2SqlService,
+          useValue: text2SqlServiceMock,
+        },
+      ],
+    }).compile();
 
     botService = module.get<BotService>(BotService);
     telegramService = module.get<TelegramService>(TelegramService);
@@ -95,9 +101,9 @@ describe('Bot End-to-End Workflow', () => {
       expect(botService).toBeDefined();
     });
 
-    it('should initialize without starting bot when disabled', async () => {
+    it('should initialize without starting bot when disabled', () => {
       // Bot is disabled in config, so onModuleInit should not start the bot
-      await expect(botService.onModuleInit()).resolves.not.toThrow();
+      expect(() => botService.onModuleInit()).not.toThrow();
     });
 
     it('should stop gracefully', async () => {
