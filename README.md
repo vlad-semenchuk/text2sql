@@ -12,7 +12,7 @@ A sophisticated TypeScript application built with NestJS that converts natural l
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
 - [Development](#development)
-- [Testing](#testing)
+- [Docker Architecture](#docker-architecture)
 - [API Usage](#api-usage)
 
 ## Features
@@ -23,8 +23,10 @@ A sophisticated TypeScript application built with NestJS that converts natural l
 - **Database Schema Discovery**: Automatically analyzes and understands your database structure
 - **Query Validation & Auto-Fix**: Validates generated SQL and attempts automatic fixes if needed
 - **Conversational Context**: Maintains chat history with per-user session management
+- **Vector Store Integration**: ChromaDB-powered vector store for semantic search and document storage
 - **Telegram Bot Integration**: Access text2sql functionality through a Telegram bot
 - **PostgreSQL Support**: Currently supports PostgreSQL databases with TypeORM
+- **Docker Support**: Full containerization with Docker Compose for easy deployment
 
 ## Architecture
 
@@ -37,7 +39,8 @@ src/modules/
 ├── shared/
 │   ├── config/         # Environment configuration and AppBuilder
 │   ├── datasource/     # Database connection and schema services
-│   └── llm/           # LLM provider abstraction (OpenAI, Anthropic, OpenRouter)
+│   ├── llm/           # LLM provider abstraction (OpenAI, Anthropic, OpenRouter)
+│   └── vector-store/  # ChromaDB vector store integration
 ├── text2sql/          # Core text2sql feature module
 │   ├── graphs/        # LangGraph state machine and nodes
 │   ├── services/      # Business logic services
@@ -120,34 +123,47 @@ State {
 - **Anthropic**: Claude model support
 - **OpenRouter**: Multi-provider LLM access
 
-### Database
+### Database & Storage
 - **PostgreSQL**: Primary database (introspection-based schema discovery)
+- **ChromaDB**: Vector database for semantic search and embeddings
 
 ### Bot Integration
 - **Grammy**: Telegram bot framework
+
+### Containerization
+- **Docker**: Application containerization
+- **Docker Compose**: Multi-container orchestration with health checks
 
 ## Getting Started
 
 ### Prerequisites
 
+**Option 1: Docker (Recommended)**
+- Docker and Docker Compose
+- API key for at least one LLM provider (OpenAI, Anthropic, or OpenRouter)
+
+**Option 2: Local Development**
 - Node.js 18+ and npm
 - PostgreSQL database instance
+- ChromaDB instance (optional, for vector store features)
 - API key for at least one LLM provider (OpenAI, Anthropic, or OpenRouter)
 
 ### Installation
 
-```bash
-npm install
-```
+#### Docker Setup (Recommended)
 
-### Environment Setup
+1. Clone the repository and navigate to the project directory
 
-Create a `.env` file in the root directory (see `.env.example`):
+2. Create a `.env` file in the root directory:
 
 ```bash
-# Database Configuration
-DATASOURCE_TYPE=postgres
-DATASOURCE_URL=postgres://username:password@localhost:5432/database
+# PostgreSQL Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=dvdrental
+
+# ChromaDB Configuration
+CHROMA_COLLECTION_NAME=text2sql-docs
 
 # LLM Provider (choose one: openai | anthropic | openrouter)
 LLM_PROVIDER=openai
@@ -167,10 +183,61 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
 # Telegram Bot (optional)
 BOT_TOKEN=your-telegram-bot-token
-BOT_ENABLED=true
+BOT_ENABLED=false
 ```
 
-### Running the Application
+3. Start the application with Docker Compose:
+
+```bash
+# Start all services (PostgreSQL, ChromaDB, and the application)
+npm run docker:start
+
+# Stop all services
+npm run docker:stop
+```
+
+The application will be available at:
+- **API**: http://localhost:3000
+- **Health Check**: http://localhost:3000/health
+- **ChromaDB**: http://localhost:8000
+- **PostgreSQL**: localhost:5432
+
+#### Local Development Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create a `.env` file with your local database configuration:
+
+```bash
+# PostgreSQL Configuration
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=dvdrental
+POSTGRES_SCHEMA=public
+
+# ChromaDB Configuration (optional)
+CHROMA_HOST=localhost
+CHROMA_PORT=8000
+CHROMA_SSL=false
+CHROMA_COLLECTION_NAME=text2sql-docs
+
+# LLM Provider Configuration (same as Docker setup above)
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-your-key-here
+OPENAI_MODEL=gpt-4o
+
+# Telegram Bot (optional)
+BOT_TOKEN=your-telegram-bot-token
+BOT_ENABLED=false
+```
+
+3. Run the application:
 
 ```bash
 # Development mode with hot-reload
@@ -193,11 +260,37 @@ The application supports three LLM providers. Set `LLM_PROVIDER` in your `.env` 
 
 ### Database Connection
 
-Configure your PostgreSQL connection via `DATASOURCE_URL`:
+**Docker Setup:**
+Database configuration is handled automatically through Docker Compose. The PostgreSQL service includes:
+- Automatic database initialization with the DVD Rental sample database
+- Health checks for service readiness
+- Persistent volume for data storage
 
-```
-postgres://[username]:[password]@[host]:[port]/[database]
-```
+**Local Setup:**
+Configure individual PostgreSQL connection parameters:
+- `POSTGRES_HOST`: Database host (default: localhost)
+- `POSTGRES_PORT`: Database port (default: 5432)
+- `POSTGRES_USER`: Database user
+- `POSTGRES_PASSWORD`: Database password
+- `POSTGRES_DB`: Database name
+- `POSTGRES_SCHEMA`: Schema name (default: public)
+
+### ChromaDB Vector Store
+
+The vector store is optional but recommended for enhanced semantic search capabilities:
+
+**Docker Setup:**
+ChromaDB runs automatically as a service with:
+- Persistent storage for vector embeddings
+- Health monitoring
+- Automatic collection initialization
+
+**Local Setup:**
+Configure ChromaDB connection:
+- `CHROMA_HOST`: ChromaDB host (default: localhost)
+- `CHROMA_PORT`: ChromaDB port (default: 8000)
+- `CHROMA_SSL`: Use SSL connection (default: false)
+- `CHROMA_COLLECTION_NAME`: Collection name for document storage
 
 ## Project Structure
 
@@ -208,7 +301,8 @@ text2sql/
 │   │   ├── shared/
 │   │   │   ├── config/           # Environment & app configuration
 │   │   │   ├── datasource/       # Database connection & schema services
-│   │   │   └── llm/             # LLM provider abstraction
+│   │   │   ├── llm/             # LLM provider abstraction
+│   │   │   └── vector-store/    # ChromaDB vector store service
 │   │   ├── text2sql/
 │   │   │   ├── graphs/
 │   │   │   │   ├── nodes/       # Graph workflow nodes
@@ -221,10 +315,16 @@ text2sql/
 │   │   └── bot/                 # Telegram bot module
 │   ├── app.module.ts
 │   └── main.ts
+├── db-init/                     # PostgreSQL initialization scripts
+├── scripts/
+│   └── docker-start.sh         # Docker startup script
 ├── .env.example                 # Environment template
-├── CLAUDE.md                    # Project instructions for Claude Code
-├── nest-cli.json               # NestJS CLI configuration
-├── tsconfig.json               # TypeScript configuration
+├── docker-compose.yml          # Docker Compose configuration
+├── Dockerfile                  # Application Docker image
+├── Dockerfile.chromadb        # ChromaDB Docker image
+├── CLAUDE.md                   # Project instructions for Claude Code
+├── nest-cli.json              # NestJS CLI configuration
+├── tsconfig.json              # TypeScript configuration
 └── package.json
 
 ```
@@ -235,12 +335,19 @@ text2sql/
 - `src/modules/text2sql/lib/graphs/nodes/*.node.ts`: Individual workflow nodes
 - `src/modules/shared/datasource/lib/datasource.service.ts`: Database schema introspection
 - `src/modules/shared/llm/lib/llm.config.ts`: LLM provider configuration
+- `src/modules/shared/vector-store/lib/vector-store.service.ts`: ChromaDB vector store service
+- `docker-compose.yml`: Multi-container orchestration configuration
+- `Dockerfile`: Application container definition
 
 ## Development
 
 ### Available Commands
 
 ```bash
+# Docker Commands
+npm run docker:start       # Start all services with Docker Compose
+npm run docker:stop        # Stop all Docker services
+
 # Build
 npm run build              # Compile TypeScript to JavaScript
 
@@ -252,6 +359,7 @@ npm run start:debug        # Start in debug mode with watch
 # Code Quality
 npm run lint               # Run ESLint with auto-fix
 npm run format             # Format code with Prettier
+npm run format:check       # Check code formatting without fixing
 ```
 
 ### Testing
@@ -270,6 +378,58 @@ To extend the graph workflow with new nodes:
 2. Implement the `execute(state: State)` method
 3. Add the node to the graph in `text2sql.graph.ts`
 4. Update state routing logic in conditional edges
+
+## Docker Architecture
+
+The application uses a multi-container Docker setup orchestrated by Docker Compose:
+
+### Services
+
+1. **PostgreSQL** (`text2sql-postgres`)
+   - Image: `postgres:16-alpine`
+   - Port: 5432
+   - Features:
+     - Automatic initialization with DVD Rental sample database
+     - Health checks for service readiness
+     - Persistent volume storage
+     - Custom initialization scripts in `db-init/`
+
+2. **ChromaDB** (`text2sql-chromadb`)
+   - Custom image based on `chromadb/chroma:latest`
+   - Port: 8000
+   - Features:
+     - Vector database for semantic search
+     - Persistent storage for embeddings
+     - Health monitoring via HTTP endpoint
+     - Telemetry disabled for privacy
+
+3. **Application** (`text2sql-app`)
+   - Multi-stage build (builder + production)
+   - Port: 3000
+   - Features:
+     - Non-root user execution for security
+     - Built-in health checks
+     - Automatic dependency on database services
+     - Persistent cache directory
+
+### Health Monitoring
+
+All services include health checks:
+- **PostgreSQL**: `pg_isready` command (10s interval)
+- **ChromaDB**: HTTP heartbeat endpoint (10s interval)
+- **Application**: HTTP health endpoint at `/health` (30s interval)
+
+The application waits for both PostgreSQL and ChromaDB to be healthy before starting.
+
+### Volumes
+
+- `postgres_data`: PostgreSQL database files
+- `chroma_data`: ChromaDB vector embeddings
+- `cache_data`: Application cache directory
+
+### Network
+
+All services communicate via a dedicated bridge network (`text2sql-network`), providing isolation and service discovery.
 
 ## API Usage
 
