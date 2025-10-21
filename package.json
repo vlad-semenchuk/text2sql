@@ -91,6 +91,9 @@
     "testEnvironment": "node",
     "forceExit": true,
     "detectOpenHandles": true,
+    "setupFiles": [
+      "<rootDir>/test-setup.ts"
+    ],
     "moduleNameMapper": {
       "@modules/config": "<rootDir>/modules/shared/config/index",
       "@modules/datasource": "<rootDir>/modules/shared/datasource/index",
