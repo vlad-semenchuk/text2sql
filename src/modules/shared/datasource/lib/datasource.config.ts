@@ -7,7 +7,11 @@ export const DatasourceConfig = (options: DataSourceModuleOptions) =>
   registerAs('datasource', (): TypeOrmModuleOptions & DataSourceOptions => {
     return {
       type: 'postgres',
-      url: options.url,
+      host: options.host,
+      port: options.port,
+      username: options.user,
+      password: options.password,
+      database: options.database,
       schema: options.schema,
       ssl: false,
       synchronize: false,

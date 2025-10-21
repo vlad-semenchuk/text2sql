@@ -80,4 +80,12 @@ export class VectorStoreService {
   getCollection(): Collection {
     return this.collection;
   }
+
+  async ping(): Promise<void> {
+    try {
+      await this.collection.count();
+    } catch (error) {
+      throw new Error(`VectorStore ping failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }

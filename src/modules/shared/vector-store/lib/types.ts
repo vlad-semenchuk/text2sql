@@ -1,4 +1,12 @@
 export type VectorStoreModuleOptions = {
-  url: string;
-  collectionName: string;
+  chroma: {
+    host: string;
+    port: number;
+    ssl?: boolean;
+    collectionName: string;
+  };
+  openai: {
+    apiKey: string;
+    modelName: string;
+  };
 };

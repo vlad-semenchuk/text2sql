@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { HealthIndicatorResult, HealthIndicatorService } from '@nestjs/terminus';
-import { DataSource } from 'typeorm';
+import { VectorStoreService } from './vector-store.service';
 
 @Injectable()
-export class DatasourceHealthIndicator {
+export class VectorStoreHealthIndicator {
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly vectorStoreService: VectorStoreService,
     private readonly healthIndicatorService: HealthIndicatorService,
   ) {}
 
@@ -13,14 +13,10 @@ export class DatasourceHealthIndicator {
     const indicator = this.healthIndicatorService.check(key);
 
     try {
-      if (!this.dataSource.isInitialized) {
-        throw new Error('DataSource not initialized');
-      }
-
-      await this.dataSource.query('SELECT 1');
+      await this.vectorStoreService.ping();
 
       return indicator.up({
-        message: 'Database connection is healthy',
+        message: 'VectorStore connection is healthy',
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

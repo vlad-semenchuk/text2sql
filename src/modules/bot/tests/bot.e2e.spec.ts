@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { Context } from 'grammy';
-import { BotModule } from '../lib/bot.module';
 import { BotService } from '../lib/services/bot.service';
 import { TelegramService } from '../lib/services/telegram.service';
-import { CommandHandler } from '../lib/handlers/command.handler';
-import { MessageHandler } from '../lib/handlers/message.handler';
+import { CommandHandler, MessageHandler } from '../lib/handlers';
 import { Text2SqlService } from '@modules/text2sql';
 
 // Mock Grammy Context with proper method typing
@@ -89,7 +87,7 @@ describe('Bot End-to-End Workflow', () => {
     telegramService = module.get<TelegramService>(TelegramService);
     commandHandler = module.get<CommandHandler>(CommandHandler);
     messageHandler = module.get<MessageHandler>(MessageHandler);
-    text2SqlService = jest.mocked(module.get(Text2SqlService));
+    text2SqlService = module.get(Text2SqlService);
   });
 
   afterEach(async () => {
@@ -149,8 +147,7 @@ describe('Bot End-to-End Workflow', () => {
     });
 
     it('should handle text2sql service errors', async () => {
-      const queryMock = text2SqlService.query as jest.MockedFunction<typeof text2SqlService.query>;
-      queryMock.mockRejectedValueOnce(new Error('Service error'));
+      text2SqlService.query.mockRejectedValueOnce(new Error('Service error'));
 
       const result = await telegramService.processTextQuery('test question', 123456);
       expect(result).toBe('Sorry, I encountered an error while processing your question. Please try again.');
@@ -211,7 +208,7 @@ describe('Bot End-to-End Workflow', () => {
 
     it('should handle /clear command without user ID', async () => {
       const mockCtx = createMockContext() as Context;
-      mockCtx.from = undefined; // Simulate missing user info
+      (mockCtx as any).from = undefined; // Simulate missing user info
 
       await commandHandler.handleClear(mockCtx);
 
@@ -247,7 +244,7 @@ describe('Bot End-to-End Workflow', () => {
     it('should handle messages without text', async () => {
       const userId = 123456;
       const mockCtx = createMockContext('', userId) as Context;
-      mockCtx.message = undefined; // No message
+      (mockCtx as any).message = undefined; // No message
 
       await messageHandler.handleTextMessage(mockCtx);
 
@@ -257,7 +254,7 @@ describe('Bot End-to-End Workflow', () => {
 
     it('should handle messages without user ID', async () => {
       const mockCtx = createMockContext('test message') as Context;
-      mockCtx.from = undefined; // No user info
+      (mockCtx as any).from = undefined; // No user info
 
       await messageHandler.handleTextMessage(mockCtx);
 
@@ -282,7 +279,7 @@ describe('Bot End-to-End Workflow', () => {
     it('should handle non-text messages', async () => {
       const userId = 123456;
       const mockCtx = createMockContext('', userId) as Context;
-      mockCtx.message = undefined; // Non-text message
+      (mockCtx as any).message = undefined; // Non-text message
 
       await messageHandler.handleNonTextMessage(mockCtx);
 

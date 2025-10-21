@@ -1,6 +1,7 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { DataSourceModuleOptions } from './types';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { TerminusModule } from '@nestjs/terminus';
 import { DatasourceConfig } from './datasource.config';
 import { SQL_DATABASE } from './constants';
 import { DataSource } from 'typeorm';
@@ -15,7 +16,7 @@ export class DatasourceModule {
     return {
       module: DatasourceModule,
       global: true,
-      imports: [TypeOrmModule.forRootAsync(DatasourceConfig(options).asProvider())],
+      imports: [TypeOrmModule.forRootAsync(DatasourceConfig(options).asProvider()), TerminusModule],
       providers: [
         DatasourceService,
         DatasourceHealthIndicator,
@@ -37,7 +38,11 @@ export class DatasourceModule {
 
   static forRootFromEnv(): DynamicModule {
     return DatasourceModule.forRoot({
-      url: Env.string('POSTGRES_URL'),
+      host: Env.optionalString('POSTGRES_HOST', 'localhost'),
+      port: Env.optionalNumber('POSTGRES_PORT', 5432),
+      user: Env.string('POSTGRES_USER'),
+      password: Env.string('POSTGRES_PASSWORD'),
+      database: Env.optionalString('POSTGRES_DB', 'dvdrental'),
       schema: Env.optionalString('POSTGRES_SCHEMA', 'public'),
     });
   }
