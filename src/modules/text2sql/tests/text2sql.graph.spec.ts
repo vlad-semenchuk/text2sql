@@ -4,6 +4,7 @@ import { LLM } from '@modules/llm';
 import { SQL_DATABASE } from '@modules/datasource';
 import { IntentType } from '../lib/graphs/types';
 import { DatabaseService } from '../lib/graphs/services/database.service';
+import { DiscoveryCacheService } from '../lib/graphs/services/discovery-cache.service';
 import { IntentNode } from '../lib/graphs/nodes/intent.node';
 import { GreetingNode } from '../lib/graphs/nodes/greeting.node';
 import { ClarificationNode } from '../lib/graphs/nodes/clarification.node';
@@ -44,6 +45,14 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
       run: jest.fn().mockResolvedValue([]),
     };
 
+    // Mock discovery cache service
+    const mockCacheService = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+      clear: jest.fn().mockResolvedValue(undefined),
+      calculateSchemaHash: jest.fn().mockReturnValue('mock-hash'),
+    };
+
     // Mock pregeneration of discovery content (for DatabaseService initialization)
     const structuredLlm = mockLLM.withStructuredOutput();
     structuredLlm.invoke.mockResolvedValueOnce({
@@ -81,6 +90,10 @@ Columns: id (integer), user_id (integer), total (decimal), status (varchar), cre
         {
           provide: SQL_DATABASE,
           useValue: mockDatabase,
+        },
+        {
+          provide: DiscoveryCacheService,
+          useValue: mockCacheService,
         },
       ],
     }).compile();

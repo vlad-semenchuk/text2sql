@@ -29,6 +29,9 @@
       ],
       "@modules/bot": [
         "src/modules/bot/index"
+      ],
+      "@modules/vector-store": [
+        "src/modules/shared/vector-store/index"
       ]
     },
     "incremental": true,

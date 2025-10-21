@@ -5,6 +5,7 @@ import { LLM } from '@modules/llm';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { createPregenerateDiscoveryPrompt } from '../prompts';
 import { z } from 'zod';
+import { DiscoveryCacheService } from './discovery-cache.service';
 
 const DiscoveryContentSchema = z.object({
   description: z.string().describe('A 1-2 sentence description of what data is available in the database'),
@@ -19,6 +20,7 @@ export class DatabaseService implements OnModuleInit {
 
   @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
   @Inject(LLM) private readonly llm: BaseChatModel;
+  @Inject(DiscoveryCacheService) private readonly cacheService: DiscoveryCacheService;
 
   private dbSchema: string;
   private dbDiscoveryContent: DiscoveryContent;
@@ -36,8 +38,18 @@ export class DatabaseService implements OnModuleInit {
       this.logger.log('Loading database schema...');
       this.dbSchema = await this.db.getTableInfo();
 
-      this.logger.log('Pregenerating discovery content...');
-      await this.pregenerateDiscoveryContent();
+      const schemaHash = this.cacheService.calculateSchemaHash(this.dbSchema);
+      const cached = await this.cacheService.get(schemaHash);
+
+      if (cached) {
+        this.dbDiscoveryContent = cached.content;
+        this.logger.log('Discovery content loaded from cache');
+      } else {
+        this.logger.log('Pregenerating discovery content...');
+        await this.pregenerateDiscoveryContent();
+        await this.cacheService.set(schemaHash, this.dbDiscoveryContent);
+      }
+
       this.logger.log('Finished loading the database schema');
     } catch (_) {
       throw new Error('Database service initialization failed');
