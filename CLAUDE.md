@@ -85,3 +85,39 @@ The app uses a custom `AppBuilder` pattern from `@libs/core` that provides:
 - "Fix SQL query validation"
 - "Update README"
 - "Remove deprecated imports"
+
+## Claude Model Version Strategy
+
+**Current Standard**: `claude-sonnet-4-5` (alias)
+
+**Rationale**:
+- Using alias ensures all agents automatically benefit from point releases
+- Anthropic maintains backward compatibility within major.minor versions
+- Simplifies maintenance by avoiding version updates across multiple files
+
+**When to use specific version** (e.g., `claude-sonnet-4-20250514`):
+- Critical production workflows requiring strict reproducibility
+- Regulated environments needing version audit trails
+- Testing against specific model capabilities
+
+**When to use alias** (current usage):
+- Development workflows
+- Code review automation
+- CI/CD quality gates
+
+**Consistency**: All agents and workflows should reference the same model identifier to ensure uniform behavior.
+
+## Emoji Usage Policy
+
+**General Rule**: Avoid using emojis in code, commit messages, and documentation unless explicitly needed for user experience.
+
+**Exceptions**:
+- **Workflow Progress Indicators**: Git workflow agents (e.g., git-workflow-coordinator) may use status emojis (🔍 📝 ⬆️ 🎯 ✅ ❌) to clearly communicate workflow state to users
+- **Review Output**: Code review output may use emojis in structured format (📊 💬 ⚠️ ✅) as part of the FECE framework
+- **User-Facing Output**: CLI tools and agents providing user feedback may use emojis for visual clarity
+
+**Prohibited**:
+- Commit messages (keep professional and tooling-compatible)
+- Source code files (maintain language standards)
+- API responses (ensure machine readability)
+- Documentation (unless part of standardized format)

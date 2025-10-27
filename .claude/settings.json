@@ -7,19 +7,43 @@
       "Write(docs/**)",
       "Bash(npm:*)",
       "Bash(yarn:*)",
-      "Bash(git status)",
+      "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Bash(git show:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch)",
+      "Bash(git branch:--show-current)",
+      "Bash(git branch:-a:*)",
+      "Bash(git branch:-v:*)",
+      "Bash(git branch:-r:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git rebase:*)",
+      "Bash(git merge:*)",
+      "Bash(gh:*)"
     ],
     "deny": [
-      "Bash(rm -rf:*)",
+      "Bash(rm:-rf:*)",
       "Bash(sudo:*)",
+      "Bash(git branch:-D:*)",
+      "Bash(git branch:-M:*)",
+      "Bash(git push:--force:*)",
+      "Bash(git push:-f:*)",
+      "Bash(git reset:--hard:*)",
+      "Bash(git clean:-fd:*)",
+      "Bash(git clean:-f:*)",
+      "Bash(git rebase:--skip:*)",
       "Write(.env)",
-      "Write(package.json)"
+      "Write(.env.*)",
+      "Write(package.json)",
+      "Write(package-lock.json)",
+      "Write(yarn.lock)"
     ]
   },
-  "model": "claude-sonnet-4-20250514",
-  "includeCoAuthoredBy": true
+  "model": "claude-sonnet-4-5",
+  "includeCoAuthoredBy": false
 }

@@ -1,11 +1,12 @@
 name: Security Review
 
-permissions:
-  pull-requests: write  # Needed for leaving PR comments
-  contents: read
-
 on:
   pull_request:
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  pull-requests: write
+  contents: read
 
 jobs:
   security:
@@ -20,5 +21,4 @@ jobs:
         with:
           comment-pr: true
           claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude-model: claude-opus-4-1-20250805
-          custom-security-scan-instructions: "" # Add any custom instructions specific to your codebase here.
+          claude-model: claude-sonnet-4-5
