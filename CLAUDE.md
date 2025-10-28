@@ -91,7 +91,7 @@ The app uses a custom `AppBuilder` pattern from `@libs/core` that provides:
 **Current Standard**: `claude-sonnet-4-5` (alias)
 
 **Rationale**:
-- Using alias ensures all agents automatically benefit from point releases
+- Using alias ensures automatic benefits from point releases
 - Anthropic maintains backward compatibility within major.minor versions
 - Simplifies maintenance by avoiding version updates across multiple files
 
@@ -105,16 +105,9 @@ The app uses a custom `AppBuilder` pattern from `@libs/core` that provides:
 - Code review automation
 - CI/CD quality gates
 
-**Consistency**: All agents and workflows should reference the same model identifier to ensure uniform behavior.
-
 ## Emoji Usage Policy
 
 **General Rule**: Avoid using emojis in code, commit messages, and documentation unless explicitly needed for user experience.
-
-**Exceptions**:
-- **Workflow Progress Indicators**: Git workflow agents (e.g., git-workflow-coordinator) may use status emojis (🔍 📝 ⬆️ 🎯 ✅ ❌) to clearly communicate workflow state to users
-- **Review Output**: Code review output may use emojis in structured format (📊 💬 ⚠️ ✅) as part of the FECE framework
-- **User-Facing Output**: CLI tools and agents providing user feedback may use emojis for visual clarity
 
 **Prohibited**:
 - Commit messages (keep professional and tooling-compatible)
