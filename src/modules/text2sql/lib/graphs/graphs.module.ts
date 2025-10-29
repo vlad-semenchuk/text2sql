@@ -4,6 +4,8 @@ import { LLMModule } from '@modules/llm';
 import { Text2SqlGraph } from './workflows/text2sql.graph';
 import { DatabaseService } from './services/database.service';
 import { DiscoveryCacheService } from './services/discovery-cache.service';
+import { SchemaIndexingService } from './services/schema-indexing.service';
+import { TableRetrievalService } from './services/table-retrieval.service';
 import { IntentNode } from './nodes/intent.node';
 import { DiscoveryNode } from './nodes/discovery.node';
 import { GreetingNode } from './nodes/greeting.node';
@@ -19,6 +21,8 @@ import { GenerateAnswerNode } from './nodes/generate-answer.node';
     Text2SqlGraph,
     DatabaseService,
     DiscoveryCacheService,
+    SchemaIndexingService,
+    TableRetrievalService,
     IntentNode,
     GreetingNode,
     ClarificationNode,

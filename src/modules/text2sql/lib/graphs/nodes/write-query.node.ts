@@ -7,6 +7,7 @@ import { BaseNode } from './base.node';
 import { State, StateAnnotation } from '../state';
 import { z } from 'zod';
 import { DatabaseService } from '../services/database.service';
+import { TableRetrievalService } from '../services/table-retrieval.service';
 import { createWriteQueryFixPrompt } from '../prompts/write-query-fix.prompt';
 import { createWriteQueryPrompt } from '../prompts';
 import { SystemMessage } from '@langchain/core/messages';
@@ -25,6 +26,7 @@ export class WriteQueryNode extends BaseNode {
   @Inject(SQL_DATABASE) private readonly db: SqlDatabase;
   @Inject(LLM) private readonly llm: BaseChatModel;
   @Inject() private readonly dbService: DatabaseService;
+  @Inject() private readonly tableRetrievalService: TableRetrievalService;
 
   async validateQuery(sqlQuery: string): Promise<{ isValid: boolean; errorMessage?: string }> {
     try {
@@ -36,13 +38,13 @@ export class WriteQueryNode extends BaseNode {
     }
   }
 
-  async fixQuery(invalidQuery: string, errorMessage: string): Promise<QueryOutputType> {
+  async fixQuery(invalidQuery: string, errorMessage: string, relevantTables: string): Promise<QueryOutputType> {
     this.logger.debug(`Attempting to fix invalid query`);
 
     const structuredLlm = this.llm.withStructuredOutput<QueryOutputType>(QueryOutputSchema);
 
     const fixPrompt = await createWriteQueryFixPrompt({
-      tableInfo: this.dbService.tableInfo,
+      tableInfo: relevantTables,
       dialect: this.db.appDataSourceOptions.type,
       invalidQuery,
       errorMessage,
@@ -56,11 +58,22 @@ export class WriteQueryNode extends BaseNode {
 
     const lastMessage = state.messages[state.messages.length - 1];
 
+    // Retrieve relevant tables using RAG
+    const userQuery = typeof lastMessage.content === 'string' ? lastMessage.content : '';
+    const relevantTables = await this.tableRetrievalService.getRelevantTables(userQuery);
+
+    if (!relevantTables) {
+      this.logger.error('No relevant tables found for the query');
+      return {
+        rejectionReason: 'Unable to find relevant database tables for your question',
+      };
+    }
+
     const structuredLlm = this.llm.withStructuredOutput<QueryOutputType>(QueryOutputSchema);
     const systemPrompt = await createWriteQueryPrompt({
       dialect: this.db.appDataSourceOptions.type,
-      tableInfo: this.dbService.tableInfo,
-      input: lastMessage.content,
+      tableInfo: relevantTables,
+      input: userQuery,
     });
 
     const systemMessage = new SystemMessage(systemPrompt);
@@ -77,7 +90,7 @@ export class WriteQueryNode extends BaseNode {
     if (!validation.isValid) {
       this.logger.warn(`Generated query failed validation: ${query}. Error: ${validation.errorMessage}`);
 
-      const fixedQuery = await this.fixQuery(query, validation.errorMessage!);
+      const fixedQuery = await this.fixQuery(query, validation.errorMessage!, relevantTables);
 
       if (fixedQuery.rejectionReason) {
         this.logger.error(`Failed to fix invalid query`);
